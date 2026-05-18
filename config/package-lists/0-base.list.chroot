@@ -1,0 +1,62 @@
+# ── Base system ───────────────────────────────────────────────────────────────
+# Core utilities, hardware support, filesystem drivers.
+
+# Kernel + firmware
+linux-image-amd64
+linux-headers-amd64
+firmware-linux
+firmware-misc-nonfree
+firmware-amd-graphics
+firmware-iwlwifi
+firmware-realtek
+amd64-microcode
+intel-microcode
+
+# System essentials
+systemd
+systemd-timesyncd
+dbus
+sudo
+curl
+wget
+git
+unzip
+p7zip-full
+xz-utils
+rsync
+lsb-release
+gnupg
+apt-transport-https
+ca-certificates
+software-properties-common
+
+# Filesystem support
+ntfs-3g
+exfatprogs
+fuse
+libfuse2
+dosfstools
+btrfs-progs
+
+# Hardware support
+usbutils
+pciutils
+mesa-utils
+vulkan-tools
+libvulkan1
+mesa-vulkan-drivers
+vainfo
+vdpauinfo
+
+# Network
+network-manager
+network-manager-gnome
+net-tools
+openssh-client
+resolvconf
+
+# Fonts
+fonts-noto
+fonts-noto-cjk
+fonts-liberation
+fonts-dejavu

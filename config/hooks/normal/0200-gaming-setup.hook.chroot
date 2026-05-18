@@ -1,0 +1,63 @@
+#!/bin/bash
+# 0200-gaming-setup.hook.chroot
+# Installs Proton-GE, configures binfmt for .exe auto-routing through Wine,
+# sets up per-app sandboxed Wine prefixes, enables GameMode.
+
+set -euo pipefail
+
+echo ">>> Setting up gaming compatibility layer..."
+
+# ── Proton-GE ─────────────────────────────────────────────────────────────────
+# Download the latest Proton-GE release into the system Steam compat tools dir
+# so it's available for all users immediately after install.
+
+PROTON_VER="GE-Proton10-3"
+PROTON_DIR="/usr/share/steam/compatibilitytools.d"
+mkdir -p "${PROTON_DIR}"
+
+wget -qO /tmp/proton-ge.tar.gz \
+    "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/${PROTON_VER}/${PROTON_VER}.tar.gz"
+tar -xzf /tmp/proton-ge.tar.gz -C "${PROTON_DIR}"
+rm -f /tmp/proton-ge.tar.gz
+
+echo ">>> Proton-GE ${PROTON_VER} installed."
+
+# ── binfmt: auto-route .exe through Wine ─────────────────────────────────────
+# Users can double-click .exe files or run them from the terminal and they
+# automatically go through Wine — no manual wine invocation needed.
+
+cat > /etc/binfmt.d/wine.conf << 'EOF'
+# Route Windows PE executables through Wine automatically
+:DOSWin:M::MZ::/usr/bin/wine:
+EOF
+
+systemctl enable systemd-binfmt.service 2>/dev/null || true
+
+echo ">>> .exe auto-routing via binfmt configured."
+
+# ── GameMode ──────────────────────────────────────────────────────────────────
+# Enable GameMode service so games automatically get CPU governor + scheduling boosts
+systemctl enable gamemoded.service 2>/dev/null || true
+
+# Allow all users to use GameMode
+cat > /etc/security/limits.d/infinity-gamemode.conf << 'EOF'
+@users   -  nice      -10
+@users   -  rtprio     5
+EOF
+
+echo ">>> GameMode enabled."
+
+# ── MangoHud default config ───────────────────────────────────────────────────
+mkdir -p /etc/mangohud
+cat > /etc/mangohud/MangoHud.conf << 'EOF'
+# InfinityOS default MangoHud configuration
+fps
+cpu_temp
+gpu_temp
+ram
+gpu_mem_used
+frame_timing
+toggle_hud=Shift_R+F12
+EOF
+
+echo ">>> Gaming setup complete."

@@ -1,0 +1,54 @@
+# ── KDE Plasma Desktop ────────────────────────────────────────────────────────
+# Full KDE Plasma environment. Only desktop environment — no fallback.
+
+# Core Plasma
+plasma-desktop
+plasma-workspace
+sddm
+sddm-theme-breeze
+kde-plasma-desktop
+plasma-nm
+plasma-pa
+plasma-disks
+plasma-browser-integration
+kscreen
+
+# KDE applications
+dolphin
+konsole
+kate
+ark
+okular
+gwenview
+spectacle
+kcalc
+kwrite
+filelight
+partitionmanager
+ksystemlog
+
+# KDE system tools
+systemsettings
+plasma-systemmonitor
+kinfocenter
+bluedevil
+bluetooth
+
+# Multimedia
+vlc
+ffmpeg
+ffmpegthumbs
+kdegraphics-thumbnailers
+phonon4qt5-backend-gstreamer
+gstreamer1.0-plugins-good
+gstreamer1.0-plugins-bad
+gstreamer1.0-plugins-ugly
+gstreamer1.0-libav
+
+# Polish
+breeze
+breeze-gtk-theme
+kde-config-gtk-style
+kio-extras
+kio-fuse
+xdg-desktop-portal-kde

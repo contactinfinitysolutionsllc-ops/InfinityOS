@@ -1,0 +1,150 @@
+#!/bin/bash
+# 0300-privacy-setup.hook.chroot
+# Applies privacy defaults: firewall, encrypted DNS, MAC randomization,
+# telemetry blocking at the hosts level, AppArmor enforcement.
+
+set -euo pipefail
+
+echo ">>> Applying privacy defaults..."
+
+# ── Firewall ──────────────────────────────────────────────────────────────────
+ufw --force enable
+ufw default deny incoming
+ufw default allow outgoing
+# Allow local network services (Steam, InfinityMO local server, llama.cpp)
+ufw allow from 127.0.0.1
+systemctl enable ufw
+
+echo ">>> Firewall enabled (deny incoming by default)."
+
+# ── DNS over HTTPS via dnscrypt-proxy ─────────────────────────────────────────
+# Route all DNS through encrypted resolvers — no plaintext DNS leaks.
+cat > /etc/dnscrypt-proxy/dnscrypt-proxy.toml << 'EOF'
+# InfinityOS — encrypted DNS configuration
+listen_addresses = ['127.0.0.1:53', '[::1]:53']
+max_clients = 250
+ipv4_servers = true
+ipv6_servers = false
+dnscrypt_servers = true
+doh_servers = true
+require_dnssec = true
+require_nolog = true       # Only use servers that don't log queries
+require_nofilter = true
+force_tcp = false
+timeout = 5000
+log_level = 0
+
+# Fallback if all resolvers fail (plain DNS — temporary only)
+fallback_resolvers = ['9.9.9.9:53', '1.1.1.1:53']
+ignore_system_dns = true
+
+[sources]
+  [sources.public-resolvers]
+  urls = ['https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/public-resolvers.md']
+  cache_file = '/var/cache/dnscrypt-proxy/public-resolvers.md'
+  minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
+  refresh_delay = 72
+  prefix = ''
+EOF
+
+# Point systemd-resolved at dnscrypt-proxy
+mkdir -p /etc/systemd/resolved.conf.d
+cat > /etc/systemd/resolved.conf.d/infinity-dns.conf << 'EOF'
+[Resolve]
+DNS=127.0.0.1
+DNSStubListener=no
+DNSSEC=yes
+EOF
+
+systemctl enable dnscrypt-proxy
+systemctl enable systemd-resolved
+
+echo ">>> Encrypted DNS configured."
+
+# ── MAC address randomization ─────────────────────────────────────────────────
+# Randomize MAC on every connection — prevents tracking across networks.
+mkdir -p /etc/NetworkManager/conf.d
+cat > /etc/NetworkManager/conf.d/infinity-mac-randomize.conf << 'EOF'
+[device]
+wifi.scan-rand-mac-address=yes
+
+[connection]
+wifi.cloned-mac-address=random
+ethernet.cloned-mac-address=random
+connection.stable-id=${CONNECTION}/${BOOT}
+EOF
+
+echo ">>> MAC randomization enabled."
+
+# ── Telemetry block list (hosts file) ─────────────────────────────────────────
+# Block known telemetry, tracking, and surveillance endpoints at the OS level.
+# This covers Microsoft, Google Analytics, Meta pixels, and major data brokers.
+
+cat >> /etc/hosts << 'EOF'
+
+# ── InfinityOS Privacy Block List ────────────────────────────────────────────
+# Microsoft telemetry
+0.0.0.0 telemetry.microsoft.com
+0.0.0.0 vortex.data.microsoft.com
+0.0.0.0 settings-win.data.microsoft.com
+0.0.0.0 watson.telemetry.microsoft.com
+0.0.0.0 sqm.telemetry.microsoft.com
+0.0.0.0 oca.telemetry.microsoft.com
+0.0.0.0 telemetry.urs.microsoft.com
+0.0.0.0 reports.wes.df.telemetry.microsoft.com
+0.0.0.0 wes.df.telemetry.microsoft.com
+0.0.0.0 services.wes.df.telemetry.microsoft.com
+0.0.0.0 df.telemetry.microsoft.com
+0.0.0.0 compatexchange.cloudapp.net
+
+# Google Analytics / tracking
+0.0.0.0 google-analytics.com
+0.0.0.0 www.google-analytics.com
+0.0.0.0 ssl.google-analytics.com
+0.0.0.0 analytics.google.com
+
+# Meta / Facebook tracking
+0.0.0.0 graph.facebook.com
+0.0.0.0 connect.facebook.net
+0.0.0.0 pixel.facebook.com
+
+# Major data brokers
+0.0.0.0 acxiom.com
+0.0.0.0 datalogix.com
+0.0.0.0 epsilon.com
+0.0.0.0 neustar.biz
+0.0.0.0 liveramp.com
+EOF
+
+echo ">>> Telemetry block list applied."
+
+# ── AppArmor enforcement ──────────────────────────────────────────────────────
+systemctl enable apparmor
+aa-enforce /etc/apparmor.d/* 2>/dev/null || true
+
+echo ">>> AppArmor enforcement enabled."
+
+# ── Kernel hardening (sysctl) ─────────────────────────────────────────────────
+cat > /etc/sysctl.d/99-infinity-hardening.conf << 'EOF'
+# InfinityOS kernel hardening
+
+# Network
+net.ipv4.tcp_syncookies = 1
+net.ipv4.conf.all.rp_filter = 1
+net.ipv4.conf.default.rp_filter = 1
+net.ipv4.conf.all.accept_redirects = 0
+net.ipv4.conf.default.accept_redirects = 0
+net.ipv4.conf.all.send_redirects = 0
+net.ipv4.conf.all.accept_source_route = 0
+net.ipv6.conf.all.accept_redirects = 0
+
+# Memory
+kernel.randomize_va_space = 2
+kernel.kptr_restrict = 2
+kernel.dmesg_restrict = 1
+
+# Disable magic SysRq
+kernel.sysrq = 0
+EOF
+
+echo ">>> Privacy setup complete."

@@ -1,0 +1,39 @@
+# ── Gaming + Windows compatibility ───────────────────────────────────────────
+# Wine-Staging, Steam, Proton support, performance tools.
+# Third-party repos (WineHQ, etc.) are added by the 0100 hook.
+
+# 32-bit support (required for Steam + Wine)
+# lib32gcc-s1  ← installed by wine hook
+# libc6-i386   ← installed by wine hook
+
+# Wine (WineHQ staging — added via hook, listed here for reference)
+# winehq-staging  ← installed by hook after repo is added
+
+# Native Debian wine as fallback during build
+wine
+wine32
+wine64
+winetricks
+cabextract
+
+# Steam (downloads and installs itself on first run)
+steam-installer
+
+# Lutris (universal game launcher)
+lutris
+
+# Performance + overlay
+gamemode
+mangohud
+
+# Vulkan + DXVK support
+mesa-vulkan-drivers
+vulkan-tools
+libvulkan1
+libvulkan1:i386
+
+# Proton-GE is downloaded by the 0200 hook at build time
+
+# Utilities
+innoextract
+dosbox

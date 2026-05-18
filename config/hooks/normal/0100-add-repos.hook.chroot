@@ -1,0 +1,40 @@
+#!/bin/bash
+# 0100-add-repos.hook.chroot
+# Adds third-party repositories needed for WineHQ staging, Heroic,
+# and other packages not in Debian's official repos.
+
+set -euo pipefail
+
+echo ">>> Adding third-party repositories..."
+
+# ── i386 architecture (Wine + Steam) ─────────────────────────────────────────
+dpkg --add-architecture i386
+apt-get update -qq
+
+# ── WineHQ Staging ────────────────────────────────────────────────────────────
+mkdir -p /etc/apt/keyrings
+wget -qO /etc/apt/keyrings/winehq-archive.key \
+    https://dl.winehq.org/wine-builds/winehq.key
+
+cat > /etc/apt/sources.list.d/winehq.sources << 'EOF'
+Types: deb
+URIs: https://dl.winehq.org/wine-builds/debian/
+Suites: bookworm
+Components: main
+Signed-By: /etc/apt/keyrings/winehq-archive.key
+EOF
+
+apt-get update -qq
+apt-get install -y --install-recommends winehq-staging
+
+echo ">>> WineHQ Staging installed."
+
+# ── Heroic Games Launcher (Epic + GOG on Linux) ───────────────────────────────
+HEROIC_VER="2.15.2"
+HEROIC_DEB="heroic_${HEROIC_VER}_amd64.deb"
+wget -qO /tmp/${HEROIC_DEB} \
+    "https://github.com/Heroic-Games-Launcher/HeroicGamesLauncher/releases/download/v${HEROIC_VER}/${HEROIC_DEB}"
+dpkg -i /tmp/${HEROIC_DEB} || apt-get install -fy
+rm -f /tmp/${HEROIC_DEB}
+
+echo ">>> Heroic Games Launcher installed."

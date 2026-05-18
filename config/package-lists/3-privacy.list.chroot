@@ -1,0 +1,31 @@
+# ── Privacy + Security ────────────────────────────────────────────────────────
+# Firewall, sandboxing, MAC randomization, encrypted DNS.
+# Default config is applied by the 0300 hook.
+
+# Firewall
+nftables
+ufw
+iptables
+
+# Sandboxing
+firejail
+bubblewrap
+apparmor
+apparmor-utils
+apparmor-profiles
+
+# Network privacy
+macchanger
+dnscrypt-proxy
+tor
+torsocks
+
+# Encryption + passwords
+gnupg2
+gpg
+seahorse
+keepassxc
+
+# Disk encryption support
+cryptsetup
+cryptsetup-initramfs

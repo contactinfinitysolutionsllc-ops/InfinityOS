@@ -1,0 +1,15 @@
+# live-build output — never commit ISOs or build artifacts
+*.iso
+*.iso.sha256
+build.log
+chroot/
+binary/
+cache/
+.build/
+
+# Live-build auto-generated config
+config/binary
+config/bootstrap
+config/chroot
+config/common
+config/source

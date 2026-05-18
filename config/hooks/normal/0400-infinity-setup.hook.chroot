@@ -1,0 +1,161 @@
+#!/bin/bash
+# 0400-infinity-setup.hook.chroot
+# Installs InfinityMO AppImage, sets up the llama.cpp AI service,
+# configures the first-boot experience, and applies InfinityOS branding.
+
+set -euo pipefail
+
+echo ">>> Setting up InfinityOS components..."
+
+# ── InfinityMO ────────────────────────────────────────────────────────────────
+INFINITY_MO_VER="1.0.2"
+MO_APPIMAGE="InfinityMO_${INFINITY_MO_VER}_amd64.AppImage"
+MO_URL="https://github.com/contactinfinitysolutionsllc-ops/InfinityMO/releases/download/v${INFINITY_MO_VER}/${MO_APPIMAGE}"
+
+mkdir -p /opt/infinitymo
+wget -qO "/opt/infinitymo/${MO_APPIMAGE}" "${MO_URL}"
+chmod +x "/opt/infinitymo/${MO_APPIMAGE}"
+
+# Desktop entry
+cat > /usr/share/applications/infinitymo.desktop << EOF
+[Desktop Entry]
+Name=InfinityMO
+Comment=AI-powered universal mod organizer
+Exec=/opt/infinitymo/${MO_APPIMAGE}
+Icon=infinitymo
+Terminal=false
+Type=Application
+Categories=Game;Utility;
+Keywords=mods;modding;games;organizer;
+EOF
+
+echo ">>> InfinityMO installed."
+
+# ── llama.cpp AI service ──────────────────────────────────────────────────────
+# Install the llama-server binary. The AI model itself (~2.2 GB) is
+# downloaded on first boot by infinity-first-boot.service to keep the ISO lean.
+
+LLAMA_VER="b5574"
+LLAMA_ASSET="llama-${LLAMA_VER}-bin-ubuntu-x64.zip"
+LLAMA_URL="https://github.com/ggml-org/llama.cpp/releases/download/${LLAMA_VER}/${LLAMA_ASSET}"
+
+mkdir -p /opt/infinity-ai/bin
+wget -qO /tmp/llama.zip "${LLAMA_URL}"
+unzip -q /tmp/llama.zip -d /tmp/llama-extract
+cp /tmp/llama-extract/llama-server /opt/infinity-ai/bin/
+chmod +x /opt/infinity-ai/bin/llama-server
+rm -rf /tmp/llama.zip /tmp/llama-extract
+
+echo ">>> llama-server installed."
+
+# systemd service for the AI (starts after first-boot downloads the model)
+cat > /etc/systemd/system/infinity-ai.service << 'EOF'
+[Unit]
+Description=InfinityOS Local AI Service (llama.cpp)
+After=network-online.target infinity-first-boot.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=infinity-ai
+Group=infinity-ai
+ExecStartPre=/bin/sh -c 'test -f /var/lib/infinity-ai/model.gguf'
+ExecStart=/opt/infinity-ai/bin/llama-server \
+    --model /var/lib/infinity-ai/model.gguf \
+    --host 127.0.0.1 \
+    --port 8080 \
+    --ctx-size 4096 \
+    --threads 4 \
+    --n-predict -1
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Dedicated system user for the AI service (no login, no home)
+useradd --system --no-create-home --shell /usr/sbin/nologin infinity-ai || true
+mkdir -p /var/lib/infinity-ai
+chown infinity-ai:infinity-ai /var/lib/infinity-ai
+
+systemctl enable infinity-ai.service
+
+echo ">>> AI service configured."
+
+# ── First-boot service ────────────────────────────────────────────────────────
+# Downloads the AI model, runs setup wizard on the very first boot after install.
+
+cat > /usr/local/bin/infinity-first-boot << 'SCRIPT'
+#!/bin/bash
+# Runs once after installation to download AI model and finish setup.
+set -e
+
+SENTINEL="/var/lib/infinity-ai/.setup-complete"
+[ -f "${SENTINEL}" ] && exit 0
+
+echo "InfinityOS first-boot setup..."
+
+# Download Phi-3.5-mini Q4_K_M (~2.2 GB)
+MODEL_URL="https://huggingface.co/bartowski/Phi-3.5-mini-instruct-GGUF/resolve/main/Phi-3.5-mini-instruct-Q4_K_M.gguf"
+wget --progress=bar:force \
+     -O /var/lib/infinity-ai/model.gguf \
+     "${MODEL_URL}"
+
+chown infinity-ai:infinity-ai /var/lib/infinity-ai/model.gguf
+touch "${SENTINEL}"
+
+systemctl start infinity-ai.service
+echo "InfinityOS AI service is ready."
+SCRIPT
+
+chmod +x /usr/local/bin/infinity-first-boot
+
+cat > /etc/systemd/system/infinity-first-boot.service << 'EOF'
+[Unit]
+Description=InfinityOS First Boot Setup
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=!/var/lib/infinity-ai/.setup-complete
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/infinity-first-boot
+RemainAfterExit=yes
+StandardOutput=journal+console
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl enable infinity-first-boot.service
+
+echo ">>> First-boot setup service configured."
+
+# ── SDDM theme / branding ─────────────────────────────────────────────────────
+mkdir -p /etc/sddm.conf.d
+cat > /etc/sddm.conf.d/infinity-theme.conf << 'EOF'
+[Theme]
+Current=breeze
+
+[General]
+HaltCommand=/usr/bin/systemctl poweroff
+RebootCommand=/usr/bin/systemctl reboot
+EOF
+
+# KDE default settings for new users
+mkdir -p /etc/skel/.config
+cat > /etc/skel/.config/kdeglobals << 'EOF'
+[General]
+TerminalApplication=konsole
+
+[KDE]
+ColorScheme=BreezeDark
+widgetStyle=Breeze
+
+[Icons]
+Theme=breeze-dark
+EOF
+
+echo ">>> Branding and defaults applied."
+echo ">>> InfinityOS setup complete."

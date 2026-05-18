@@ -1,0 +1,33 @@
+# ── Applications ─────────────────────────────────────────────────────────────
+# Everyday desktop applications.
+
+# Web
+firefox-esr
+
+# Office
+libreoffice
+libreoffice-kde5
+
+# Development (lightweight — users can add more)
+git
+python3
+python3-pip
+build-essential
+
+# System tools
+htop
+btop
+neofetch
+gparted
+timeshift
+
+# Archive
+ark
+unrar
+
+# Communication (optional — not forced)
+# thunderbird  ← users can install; keeping base lean
+
+# Calamares installer (graphical installer for the live ISO)
+calamares
+calamares-settings-debian

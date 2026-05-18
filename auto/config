@@ -1,0 +1,22 @@
+#!/bin/sh
+# auto/config — live-build configuration for InfinityOS
+# Debian Bookworm base, KDE Plasma, privacy-first, gaming-ready.
+
+set -e
+
+lb config noauto \
+    --distribution         bookworm \
+    --architectures        amd64 \
+    --binary-images        iso-hybrid \
+    --bootloaders          "grub-pc,grub-efi" \
+    --archive-areas        "main contrib non-free non-free-firmware" \
+    --backports            true \
+    --apt-recommends       true \
+    --apt-secure           true \
+    --debootstrap-options  "--include=ca-certificates" \
+    --iso-application      "InfinityOS" \
+    --iso-publisher        "Infinity Solutions LLC" \
+    --iso-volume           "InfinityOS" \
+    --memtest              none \
+    --debian-installer     none \
+    "${@}"

@@ -1,0 +1,103 @@
+# .github/workflows/build-iso.yml
+#
+# Builds the InfinityOS ISO and publishes it as a GitHub Release
+# whenever a version tag is pushed:
+#   git tag v1.0.0 && git push --tags
+#
+# The ISO is built using Debian's live-build tool on an Ubuntu runner.
+# Full build takes ~40-60 minutes.
+
+name: Build ISO
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:   # allow manual trigger for testing
+
+jobs:
+  build:
+    name: Build InfinityOS ISO
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install live-build + tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            live-build \
+            debootstrap \
+            squashfs-tools \
+            xorriso \
+            grub-pc-bin \
+            grub-efi-amd64-bin \
+            mtools \
+            isolinux \
+            syslinux-common
+
+      - name: Make auto scripts executable
+        run: chmod +x auto/config auto/build auto/clean
+
+      - name: Configure live-build
+        run: sudo ./auto/config
+
+      - name: Build ISO
+        run: sudo lb build 2>&1 | tee build.log
+        timeout-minutes: 90
+
+      - name: Rename ISO with version
+        run: |
+          VERSION="${{ github.ref_name }}"
+          mv live-image-amd64.hybrid.iso "InfinityOS-${VERSION}-amd64.iso" 2>/dev/null || \
+          mv *.iso "InfinityOS-${VERSION}-amd64.iso"
+          sha256sum "InfinityOS-${VERSION}-amd64.iso" > "InfinityOS-${VERSION}-amd64.iso.sha256"
+          echo "ISO_FILE=InfinityOS-${VERSION}-amd64.iso" >> $GITHUB_ENV
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "InfinityOS ${{ github.ref_name }}"
+          body: |
+            ## InfinityOS ${{ github.ref_name }}
+
+            **Privacy-first Debian-based Linux with gaming compatibility and local AI built in.**
+
+            ### What's included
+            - Debian Bookworm (Stable) base
+            - KDE Plasma desktop
+            - Wine-Staging + Proton-GE (Windows game compatibility)
+            - Steam + Heroic Games Launcher pre-installed
+            - InfinityMO mod organizer
+            - Local AI assistant (Phi-3.5-mini, downloads on first boot ~2.2 GB)
+            - Firewall on by default, encrypted DNS, MAC randomization
+            - Telemetry blocked at the OS level
+
+            ### Installation
+            1. Flash the ISO to a USB drive (`dd` or Balena Etcher)
+            2. Boot from USB, select **Install InfinityOS**
+            3. AI model downloads automatically on first boot (~2.2 GB, needs internet)
+
+            ### Verify download
+            ```
+            sha256sum -c InfinityOS-${{ github.ref_name }}-amd64.iso.sha256
+            ```
+          files: |
+            ${{ env.ISO_FILE }}
+            ${{ env.ISO_FILE }}.sha256
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          retention-days: 7
