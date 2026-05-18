@@ -1,0 +1,20 @@
+# ── Theme + visual polish ─────────────────────────────────────────────────────
+
+# Qt blur/transparency (makes panels look like the mockup)
+qt5-style-kvantum
+qt5-style-kvantum-themes
+
+# KDE look-and-feel extras
+breeze
+breeze-gtk-theme
+kde-config-gtk-style
+kde-config-gtk-style-preview
+
+# Icon theme
+breeze-icon-theme
+
+# Used to generate placeholder wallpaper if branding image not present
+imagemagick
+
+# Blur effect dependencies
+libkf5kio-dev

@@ -1,0 +1,101 @@
+#!/bin/bash
+# 0060-kde-theme.hook.chroot
+# Applies the InfinityOS KDE theme: purple color scheme, dark Breeze,
+# Kvantum blur effects, SDDM matching theme, window decoration.
+
+set -euo pipefail
+
+echo ">>> Applying InfinityOS KDE theme..."
+
+# ── Kvantum (blur/transparency engine for Qt apps) ────────────────────────────
+apt-get install -y qt5-style-kvantum qt5-style-kvantum-themes 2>/dev/null || true
+
+# ── KDE Plasma global theme + color scheme ────────────────────────────────────
+# Applied via /etc/skel — copies to every new user on account creation.
+# Also apply to the live user directly.
+cp -r /etc/skel/.config /home/user/ 2>/dev/null || true
+chown -R user:user /home/user/.config
+
+# ── Panel sizing config (kscreen / kwinrc) ────────────────────────────────────
+cat >> /etc/skel/.config/kwinrc << 'EOF'
+
+[Effect-overview]
+BorderActivate=9
+
+[Plugins]
+blurEnabled=true
+contrastEnabled=true
+kwin4_effect_fadeEnabled=true
+roundedcornersEnabled=false
+
+[TabBox]
+LayoutName=thumbnail_grid
+EOF
+
+# ── Bottom panel: floating, centered, not full width ─────────────────────────
+# This is set via plasmashell config — the panel needs to be told
+# its alignment is center and length is auto (not maximized).
+mkdir -p /etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc.d
+
+cat >> /etc/skel/.config/kscreenlockerrc << 'EOF'
+[Daemon]
+Autolock=true
+LockOnResume=true
+Timeout=10
+
+[Greeter][Wallpaper][org.kde.image][General]
+Image=/usr/share/wallpapers/InfinityOS/contents/images/3840x2160.png
+EOF
+
+# ── SDDM theme matching InfinityOS colors ─────────────────────────────────────
+mkdir -p /etc/sddm.conf.d
+
+cat > /etc/sddm.conf.d/infinity-theme.conf << 'EOF'
+[Theme]
+Current=breeze
+
+[General]
+GreeterEnvironment=QT_SCREEN_SCALE_FACTORS=1,QT_FONT_DPI=96
+HaltCommand=/usr/bin/systemctl poweroff
+RebootCommand=/usr/bin/systemctl reboot
+EOF
+
+# ── Wallpaper package structure ───────────────────────────────────────────────
+# The actual wallpaper image is in branding/ and gets placed here at build time.
+# Supported resolutions are listed — KDE picks the best fit.
+WALL_DIR="/usr/share/wallpapers/InfinityOS"
+mkdir -p "${WALL_DIR}/contents/images"
+
+cat > "${WALL_DIR}/metadata.json" << 'EOF'
+{
+    "KPlugin": {
+        "Id": "InfinityOS",
+        "Name": "InfinityOS",
+        "Description": "InfinityOS default wallpaper",
+        "Author": "Infinity Solutions LLC",
+        "License": "CC-BY-SA-4.0"
+    },
+    "KPackageStructure": "Wallpaper/Images"
+}
+EOF
+
+# If branding wallpaper was staged, copy it in
+if [ -f /usr/share/infinity/wallpaper-3840x2160.png ]; then
+    cp /usr/share/infinity/wallpaper-3840x2160.png "${WALL_DIR}/contents/images/3840x2160.png"
+    cp /usr/share/infinity/wallpaper-3840x2160.png "${WALL_DIR}/contents/images/1920x1080.png"
+    echo ">>> Custom wallpaper installed."
+else
+    # Generate a placeholder dark wallpaper using ImageMagick if available
+    if command -v convert &>/dev/null; then
+        convert -size 3840x2160 \
+            gradient:'#0d0e1a-#1a0d2e' \
+            "${WALL_DIR}/contents/images/3840x2160.png"
+        cp "${WALL_DIR}/contents/images/3840x2160.png" \
+           "${WALL_DIR}/contents/images/1920x1080.png"
+        echo ">>> Placeholder gradient wallpaper generated."
+    else
+        echo ">>> WARNING: No wallpaper image found. Add branding/wallpaper-3840x2160.png"
+    fi
+fi
+
+echo ">>> KDE theme setup complete."

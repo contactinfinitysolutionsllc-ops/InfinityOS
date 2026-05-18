@@ -1,0 +1,69 @@
+[ColorEffects:Disabled]
+Color=56,56,56
+ColorAmount=0
+ColorEffect=0
+ContrastAmount=0.65
+ContrastEffect=1
+IntensityAmount=0.1
+IntensityEffect=2
+
+[ColorEffects:Inactive]
+ChangeSelectionColor=true
+Color=112,111,110
+ColorAmount=0.025
+ColorEffect=2
+ContrastAmount=0.1
+ContrastEffect=2
+Enable=false
+IntensityAmount=0
+IntensityEffect=0
+
+[Colors:Button]
+BackgroundNormal=40,42,54
+DecorationFocus=138,79,255
+DecorationHover=138,79,255
+ForegroundNormal=240,240,255
+
+[Colors:Selection]
+BackgroundNormal=138,79,255
+ForegroundNormal=255,255,255
+
+[Colors:View]
+BackgroundNormal=18,20,32
+ForegroundNormal=240,240,255
+
+[Colors:Window]
+BackgroundNormal=22,24,38
+ForegroundNormal=240,240,255
+
+[General]
+ColorScheme=InfinityOS
+Name=InfinityOS
+TerminalApplication=konsole
+TerminalService=org.kde.konsole
+XftAntialias=true
+XftHintStyle=hintmedium
+XftSubPixel=rgb
+font=Noto Sans,10,-1,5,50,0,0,0,0,0
+fixed=Noto Sans Mono,10,-1,5,50,0,0,0,0,0
+menuFont=Noto Sans,10,-1,5,50,0,0,0,0,0
+smallestReadableFont=Noto Sans,8,-1,5,50,0,0,0,0,0
+toolBarFont=Noto Sans,10,-1,5,50,0,0,0,0,0
+
+[Icons]
+Theme=breeze-dark
+
+[KDE]
+AccentColor=138,79,255
+ColorScheme=InfinityOS
+LookAndFeelPackage=org.kde.breezedark.desktop
+SingleClick=false
+contrast=4
+widgetStyle=Breeze
+
+[WM]
+activeBackground=22,24,38
+activeFont=Noto Sans,10,-1,5,70,0,0,0,0,0
+activeForeground=240,240,255
+inactiveBackground=18,20,30
+inactiveForeground=120,120,140
