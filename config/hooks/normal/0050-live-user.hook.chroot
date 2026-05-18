@@ -1,0 +1,78 @@
+#!/bin/bash
+# 0050-live-user.hook.chroot
+# Creates the live session user and configures SDDM autologin.
+# This user only exists in the live (USB) environment — not after install.
+
+set -euo pipefail
+
+echo ">>> Configuring live session user..."
+
+# Create the live user — no password, sudo access for trying things out
+useradd --create-home --shell /bin/bash --comment "InfinityOS Live User" user 2>/dev/null || true
+echo "user:live" | chpasswd
+usermod -aG sudo,audio,video,plugdev,netdev,bluetooth user
+
+# Passwordless sudo for live session (normal — standard across all distros)
+echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/live-user
+chmod 440 /etc/sudoers.d/live-user
+
+echo ">>> Live user created."
+
+# ── SDDM autologin ────────────────────────────────────────────────────────────
+mkdir -p /etc/sddm.conf.d
+
+cat > /etc/sddm.conf.d/autologin.conf << 'EOF'
+[Autologin]
+User=user
+Session=plasma
+Relogin=false
+
+[Theme]
+Current=breeze
+
+[General]
+HaltCommand=/usr/bin/systemctl poweroff
+RebootCommand=/usr/bin/systemctl reboot
+EOF
+
+# Enable SDDM
+systemctl enable sddm
+
+echo ">>> SDDM autologin configured → KDE Plasma as 'user'."
+
+# ── Live user KDE config ──────────────────────────────────────────────────────
+# Pre-configure KDE for the live user so they land on a working dark desktop.
+
+LIVE_CONFIG="/home/user/.config"
+mkdir -p "${LIVE_CONFIG}"
+
+cat > "${LIVE_CONFIG}/kdeglobals" << 'EOF'
+[General]
+TerminalApplication=konsole
+
+[KDE]
+ColorScheme=BreezeDark
+LookAndFeelPackage=org.kde.breezedark.desktop
+SingleClick=false
+widgetStyle=Breeze
+
+[Icons]
+Theme=breeze-dark
+EOF
+
+cat > "${LIVE_CONFIG}/plasmarc" << 'EOF'
+[Theme]
+name=breeze-dark
+EOF
+
+cat > "${LIVE_CONFIG}/kwinrc" << 'EOF'
+[Compositing]
+Backend=OpenGL
+GLCore=true
+Enabled=true
+EOF
+
+# Fix ownership — live user must own their own config
+chown -R user:user /home/user
+
+echo ">>> Live user KDE defaults applied."

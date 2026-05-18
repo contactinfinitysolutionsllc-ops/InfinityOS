@@ -1,33 +1,33 @@
 # ── Applications ─────────────────────────────────────────────────────────────
-# Everyday desktop applications.
 
-# Web
+# Browser — Firefox ESR hardened via system policy (see includes.chroot)
+# uBlock Origin is deployed via the firefox hook, not as a package
 firefox-esr
 
 # Office
 libreoffice
 libreoffice-kde5
 
-# Development (lightweight — users can add more)
-git
-python3
-python3-pip
-build-essential
-
 # System tools
 htop
 btop
-neofetch
 gparted
 timeshift
+neofetch
 
-# Archive
-ark
+# Archive support
 unrar
 
-# Communication (optional — not forced)
-# thunderbird  ← users can install; keeping base lean
+# Media
+vlc
 
-# Calamares installer (graphical installer for the live ISO)
+# Utilities
+unzip
+wget
+curl
+
+# Calamares graphical installer
 calamares
-calamares-settings-debian
+
+# NOTE: InfinityMO and InfinityGuard are not included yet.
+# Linux versions are in development — will be added when ready.

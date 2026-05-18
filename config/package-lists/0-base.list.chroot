@@ -1,5 +1,11 @@
 # ── Base system ───────────────────────────────────────────────────────────────
-# Core utilities, hardware support, filesystem drivers.
+
+# Live system (required — without these the ISO does not boot as a live system)
+live-boot
+live-boot-initramfs-tools
+live-config
+live-config-systemd
+live-tools
 
 # Kernel + firmware
 linux-image-amd64
@@ -28,7 +34,6 @@ lsb-release
 gnupg
 apt-transport-https
 ca-certificates
-software-properties-common
 
 # Filesystem support
 ntfs-3g
@@ -45,15 +50,12 @@ mesa-utils
 vulkan-tools
 libvulkan1
 mesa-vulkan-drivers
-vainfo
-vdpauinfo
 
 # Network
 network-manager
 network-manager-gnome
 net-tools
 openssh-client
-resolvconf
 
 # Fonts
 fonts-noto
