@@ -32,9 +32,17 @@ mkdir -p /var/lib/infinity-ai
 chown infinity-ai:infinity-ai /var/lib/infinity-ai
 
 # systemd service — starts only after first-boot downloads the model
+# Performance flags explained:
+#   --threads 4        : use half the CPU cores (leaves rest for desktop/games)
+#   --ctx-size 4096    : 4K context — enough for long conversations, not wasteful
+#   --batch-size 256   : smaller batch = lower RAM spike during inference
+#   --mmap             : memory-map the model file (faster load, shares pages with OS)
+#   --cont-batching    : allow concurrent requests without blocking
+#   --no-mmap is NOT set — mmap is beneficial here
 cat > /etc/systemd/system/infinity-ai.service << 'EOF'
 [Unit]
-Description=InfinityOS Local AI Service (llama.cpp)
+Description=InfinityOS Local AI Service (llama.cpp / Phi-3.5-mini)
+Documentation=https://github.com/contactinfinitysolutionsllc-ops/InfinityOS
 After=network-online.target infinity-first-boot.service
 ConditionPathExists=/var/lib/infinity-ai/model.gguf
 
@@ -42,22 +50,42 @@ ConditionPathExists=/var/lib/infinity-ai/model.gguf
 Type=simple
 User=infinity-ai
 Group=infinity-ai
+# Nice+10: AI inference is background work — yields to foreground tasks (games, desktop)
+Nice=10
+# Limit to 60% CPU so gaming/desktop always has headroom
+CPUQuota=60%
 ExecStart=/opt/infinity-ai/bin/llama-server \
     --model /var/lib/infinity-ai/model.gguf \
     --host 127.0.0.1 \
     --port 8080 \
     --ctx-size 4096 \
+    --batch-size 256 \
     --threads 4 \
-    --n-predict -1
+    --mmap \
+    --cont-batching \
+    --log-disable
 Restart=on-failure
-RestartSec=10
+RestartSec=15
+# Prevent the AI service from eating disk on log spam
+StandardOutput=null
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
 systemctl enable infinity-ai.service
-echo ">>> AI service configured."
+echo ">>> AI service configured (tuned: Nice+10, CPUQuota=60%, mmap, ctx=4096)."
+
+# ── Infinity Assistant agent ───────────────────────────────────────────────────
+# The Python agent wrapper that gives users a real interface to the AI.
+# Lives at /usr/local/bin/infinity-assistant (already dropped via includes.chroot).
+chmod +x /usr/local/bin/infinity-assistant
+echo ">>> infinity-assistant agent: executable set."
+
+# Ensure the playbook directory is readable by all users
+chmod -R a+rX /usr/share/infinity-assistant/
+echo ">>> infinity-assistant knowledge base: permissions set."
 
 # ── First-boot service ────────────────────────────────────────────────────────
 # Downloads the AI model once after install. Shows a KDE notification
@@ -94,7 +122,7 @@ systemctl start infinity-ai.service
 if [ -n "${DBUS_SESSION}" ]; then
     DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS="unix:path=${DBUS_SESSION}" \
     notify-send "InfinityOS Ready" \
-        "Local AI assistant is running. Ask it anything at http://localhost:8080" \
+        "Local AI assistant is online. Click 'Infinity Assistant' in the dock to start." \
         --icon=dialog-information --app-name="InfinityOS" 2>/dev/null || true
 fi
 

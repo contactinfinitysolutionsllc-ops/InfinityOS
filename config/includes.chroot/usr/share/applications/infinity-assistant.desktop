@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Infinity Assistant
+GenericName=AI Assistant
+Comment=Local AI assistant — fix issues, run games, get help (runs offline)
+Exec=konsole --hold -e infinity-assistant
+Icon=/usr/share/infinity/infinity-logo.png
+Terminal=false
+Categories=System;Utility;
+Keywords=ai;assistant;help;fix;wine;gaming;
+StartupNotify=true

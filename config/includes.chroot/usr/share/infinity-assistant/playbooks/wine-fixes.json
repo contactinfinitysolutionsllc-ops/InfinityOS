@@ -1,0 +1,100 @@
+{
+  "_comment": "InfinityOS Wine/Proton fix playbook. Injected into AI context for gaming issues.",
+  "common_errors": [
+    {
+      "pattern": "err:module:import_dll.*msvcr",
+      "diagnosis": "Missing Microsoft Visual C++ runtime DLL",
+      "fix": "winetricks vcrun2022 vcrun2019 vcrun2017 vcrun2015",
+      "notes": "Run all four — games often need a specific version and winetricks handles it gracefully"
+    },
+    {
+      "pattern": "err:module:import_dll.*msvcp",
+      "diagnosis": "Missing MSVCP (C++ standard library) DLL",
+      "fix": "winetricks vcrun2022",
+      "notes": "Same package as vcrun, covers msvcp*.dll files"
+    },
+    {
+      "pattern": "err:module:import_dll.*d3d",
+      "diagnosis": "Missing DirectX DLL",
+      "fix": "winetricks dxvk",
+      "notes": "DXVK translates DirectX 9/10/11 to Vulkan — faster and more compatible than wined3d"
+    },
+    {
+      "pattern": "err:module:import_dll.*xinput",
+      "diagnosis": "Missing XInput (controller support) DLL",
+      "fix": "winetricks xinput",
+      "notes": "Required for gamepad/controller support in many Windows games"
+    },
+    {
+      "pattern": "err:module:import_dll.*xactengine",
+      "diagnosis": "Missing XACT audio engine",
+      "fix": "winetricks xact",
+      "notes": "Used by older Microsoft/Xbox games for audio"
+    },
+    {
+      "pattern": "err:module:import_dll.*physxloader|PhysX",
+      "diagnosis": "Missing NVIDIA PhysX runtime",
+      "fix": "winetricks physx",
+      "notes": "Required for games using PhysX physics engine"
+    },
+    {
+      "pattern": "err:module:import_dll.*dotnet|System.Windows.Forms",
+      "diagnosis": "Missing .NET Framework",
+      "fix": "winetricks dotnet48",
+      "notes": "dotnet48 is the most compatible version. Some older games need dotnet40 or dotnet35"
+    },
+    {
+      "pattern": "err:module:import_dll.*vcomp",
+      "diagnosis": "Missing Visual C++ OpenMP runtime",
+      "fix": "winetricks vcrun2019",
+      "notes": "vcomp*.dll is part of the Visual C++ redistribution package"
+    },
+    {
+      "pattern": "Application crashed|Unhandled exception|access violation",
+      "diagnosis": "Application crash — could be missing runtime or incompatible Wine version",
+      "fix": "WINEDEBUG=err+all wine /path/to/app.exe 2>&1 | tee /tmp/wine-crash.log && grep '^err:' /tmp/wine-crash.log | head -30",
+      "notes": "Run with full debug to see what actually failed before guessing at a fix"
+    },
+    {
+      "pattern": "fixme:heap:RtlSetHeapInformation",
+      "diagnosis": "Harmless warning — heap settings not implemented",
+      "fix": "No fix needed — this is a benign Wine 'fixme' message, not a real error",
+      "notes": "Can be suppressed with WINEDEBUG=-fixme+all if it's cluttering logs"
+    },
+    {
+      "pattern": "Could not find compatible graphics hardware|Vulkan.*not.*available",
+      "diagnosis": "Vulkan not available or not detected",
+      "fix": "sudo apt install mesa-vulkan-drivers vulkan-tools libvulkan1 && vulkaninfo --summary",
+      "notes": "If vulkaninfo works but Wine/Proton can't find it, try: DISABLE_LAYER_AMD_SWITCHABLE_GRAPHICS_1=1 %command%"
+    },
+    {
+      "pattern": "steam.*linux runtime|pressure-vessel",
+      "diagnosis": "Steam Linux Runtime / container issue",
+      "fix": "In Steam: right-click game → Properties → Compatibility → Force Proton-GE",
+      "notes": "Some games have issues with Steam's built-in container. Proton-GE often fixes it."
+    }
+  ],
+  "proton_launch_options": {
+    "general_best_start": "gamemoderun %command%",
+    "reduce_stuttering": "DXVK_ASYNC=1 gamemoderun %command%",
+    "dx12_game": "gamemoderun %command%",
+    "old_dx9_game": "PROTON_USE_WINED3D=1 %command%",
+    "controller_not_working": "SDL_GAMECONTROLLERCONFIG='' %command%",
+    "crash_on_launch": "PROTON_NO_ESYNC=1 PROTON_NO_FSYNC=1 %command%",
+    "ultra_compatibility": "PROTON_NO_ESYNC=1 PROTON_NO_FSYNC=1 PROTON_USE_WINED3D=1 %command%"
+  },
+  "winetricks_essentials": [
+    "vcrun2022",
+    "vcrun2019",
+    "corefonts",
+    "d3dx9",
+    "dxvk"
+  ],
+  "notes": {
+    "wineprefix_32bit": "Some old games need a 32-bit prefix: WINEARCH=win32 WINEPREFIX=~/.wine32 wine app.exe",
+    "wineserver_kill": "If Wine is hung: wineserver -k",
+    "dxvk_vs_wined3d": "DXVK (Vulkan) is almost always faster and more compatible than wined3d for DX9/10/11 games",
+    "proton_vs_wine": "Use Proton-GE for Steam games (via Steam compatibility settings). Use plain Wine for non-Steam Windows apps.",
+    "heroic_wine": "Heroic uses its own Wine/Proton — configure per-game in Heroic's game settings, not system Wine"
+  }
+}
