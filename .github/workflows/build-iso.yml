@@ -56,10 +56,15 @@ jobs:
         run: chmod +x auto/config auto/build auto/clean
 
       - name: Configure live-build
-        run: sudo ./auto/config
+        # lb config does NOT need root — run as the regular user so that
+        # live-build's auto-generated hooks land with runner ownership,
+        # making the subsequent chmod step work without sudo.
+        run: ./auto/config
 
       - name: Make hooks executable
-        run: chmod +x config/hooks/normal/*.hook.chroot
+        # sudo needed for any live-build generated hooks (owned by root if
+        # config was run as root — kept as safety net either way).
+        run: sudo chmod +x config/hooks/normal/*.hook.chroot
 
       - name: Build ISO
         run: sudo lb build 2>&1 | tee build.log
