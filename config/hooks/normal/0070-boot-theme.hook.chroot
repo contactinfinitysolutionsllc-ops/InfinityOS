@@ -1,0 +1,82 @@
+#!/bin/bash
+# 0070-boot-theme.hook.chroot
+# Installs the InfinityOS Plymouth boot splash and GRUB branding.
+# Replaces all "Debian" references in the boot sequence with "InfinityOS".
+
+set -euo pipefail
+
+echo ">>> Installing InfinityOS boot theme..."
+
+# ── Plymouth ──────────────────────────────────────────────────────────────────
+apt-get install -y plymouth plymouth-themes 2>/dev/null || true
+
+THEME_DIR="/usr/share/plymouth/themes/infinityos"
+mkdir -p "${THEME_DIR}"
+
+# Copy the logo into the theme directory
+# Use the square logo — works best centered on a boot screen
+if [ -f /usr/share/infinity/infinity-logo.png ]; then
+    cp /usr/share/infinity/infinity-logo.png "${THEME_DIR}/logo.png"
+    echo ">>> Plymouth: logo copied."
+else
+    echo ">>> WARNING: infinity-logo.png not found — using text fallback."
+fi
+
+# Generate the dark purple boot background
+# Full screen solid color — avoids any loading artifacts
+if command -v convert &>/dev/null; then
+    # 1920x1080 dark purple — matches InfinityOS color scheme exactly
+    convert -size 1920x1080 xc:"#0d0e1a" "${THEME_DIR}/background.png"
+    echo ">>> Plymouth: background generated (#0d0e1a dark purple)."
+
+    # Also generate the GRUB background (needs to be 8-bit PNG for GRUB)
+    convert -size 1920x1080 xc:"#0d0e1a" \
+        -type Palette -colors 256 \
+        /usr/share/grub/infinityos-grub.png
+    echo ">>> GRUB: background generated."
+else
+    echo ">>> WARNING: ImageMagick not available — boot backgrounds will be black."
+fi
+
+# ── Set InfinityOS as the default Plymouth theme ──────────────────────────────
+if command -v plymouth-set-default-theme &>/dev/null; then
+    plymouth-set-default-theme infinityos
+    echo ">>> Plymouth: infinityos set as default theme."
+fi
+
+# ── Rebuild initramfs so Plymouth is embedded in early boot ──────────────────
+# This is what actually makes the splash screen appear — without this
+# Plymouth installs but never shows during boot.
+update-initramfs -u -k all 2>/dev/null || update-initramfs -u
+echo ">>> initramfs rebuilt with InfinityOS Plymouth theme."
+
+# ── GRUB branding ─────────────────────────────────────────────────────────────
+# /etc/default/grub already dropped in via includes.chroot.
+# Run update-grub to apply it.
+if command -v update-grub &>/dev/null; then
+    update-grub 2>/dev/null || true
+    echo ">>> GRUB updated — menu entries now say 'InfinityOS'."
+fi
+
+# ── Remove Debian branding from os-release ────────────────────────────────────
+# This changes what the system reports itself as when apps ask
+sed -i 's/^NAME=.*/NAME="InfinityOS"/'                /etc/os-release
+sed -i 's/^PRETTY_NAME=.*/PRETTY_NAME="InfinityOS 1.0 (Debian Bookworm)"/' /etc/os-release
+sed -i 's/^HOME_URL=.*/HOME_URL="https:\/\/github.com\/contactinfinitysolutionsllc-ops\/InfinityOS"/' /etc/os-release
+sed -i 's/^SUPPORT_URL=.*/SUPPORT_URL="https:\/\/github.com\/contactinfinitysolutionsllc-ops\/InfinityOS\/issues"/' /etc/os-release
+
+# Add InfinityOS-specific fields if not present
+grep -q "^LOGO=" /etc/os-release || echo 'LOGO=infinityos' >> /etc/os-release
+
+echo ">>> os-release updated to InfinityOS."
+
+# ── /etc/issue (terminal login banner) ───────────────────────────────────────
+cat > /etc/issue << 'EOF'
+InfinityOS 1.0 — Privacy First. \n \l
+EOF
+
+cat > /etc/issue.net << 'EOF'
+InfinityOS 1.0 — Privacy First.
+EOF
+
+echo ">>> Boot theme setup complete."

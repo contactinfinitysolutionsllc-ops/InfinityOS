@@ -1,0 +1,100 @@
+// InfinityOS Plymouth boot splash
+// Dark purple background, centered logo, pulsing glow, progress bar.
+
+screen_width  = Window.GetWidth();
+screen_height = Window.GetHeight();
+
+// ── Background ───────────────────────────────────────────────────────────────
+background = Image("background.png");
+bg_sprite  = Sprite(background);
+bg_sprite.SetX(0);
+bg_sprite.SetY(0);
+bg_sprite.SetZ(-100);
+
+// ── Logo — scaled to 28% of screen height, centered ─────────────────────────
+logo_image     = Image("logo.png");
+logo_h         = Math.Int(screen_height * 0.28);
+logo_scale     = logo_h / logo_image.GetHeight();
+logo_w         = Math.Int(logo_image.GetWidth() * logo_scale);
+logo_scaled    = logo_image.Scale(logo_w, logo_h);
+
+logo_sprite    = Sprite(logo_scaled);
+logo_x         = Math.Int((screen_width  - logo_w) / 2);
+logo_y         = Math.Int((screen_height - logo_h) / 2) - Math.Int(screen_height * 0.08);
+logo_sprite.SetX(logo_x);
+logo_sprite.SetY(logo_y);
+logo_sprite.SetZ(10);
+
+// ── Progress bar — thin, purple, centered below logo ─────────────────────────
+bar_width   = Math.Int(screen_width * 0.35);
+bar_height  = 3;
+bar_x       = Math.Int((screen_width - bar_width) / 2);
+bar_y       = logo_y + logo_h + Math.Int(screen_height * 0.06);
+
+// Background track (dark, barely visible)
+bar_bg = Image.CreateAt(bar_width, bar_height);
+bar_bg_sprite = Sprite(bar_bg);
+bar_bg_sprite.SetX(bar_x);
+bar_bg_sprite.SetY(bar_y);
+bar_bg_sprite.SetZ(10);
+
+// Progress fill (purple)
+progress_image  = Image.CreateAt(1, bar_height);
+progress_sprite = Sprite(progress_image);
+progress_sprite.SetX(bar_x);
+progress_sprite.SetY(bar_y);
+progress_sprite.SetZ(11);
+
+progress = 0;
+
+// ── Pulse / glow animation on logo ───────────────────────────────────────────
+pulse_angle = 0;
+
+fun refresh_callback()
+    // Pulse the logo opacity gently
+    pulse_angle = pulse_angle + 3;
+    if (pulse_angle >= 360)
+        pulse_angle = 0;
+    end
+
+    opacity = 0.75 + 0.25 * Math.Sin(pulse_angle * 3.14159 / 180);
+    logo_sprite.SetOpacity(opacity);
+end
+
+Plymouth.SetRefreshFunction(refresh_callback);
+
+// ── Boot progress callback ────────────────────────────────────────────────────
+fun boot_progress_callback(duration, fraction)
+    progress = fraction;
+    fill_w = Math.Int(bar_width * fraction);
+    if (fill_w < 1) fill_w = 1; end
+
+    fill = Image.CreateAt(fill_w, bar_height);
+    fill_sprite = Sprite(fill);
+    fill_sprite.SetX(bar_x);
+    fill_sprite.SetY(bar_y);
+    fill_sprite.SetZ(12);
+    progress_sprite = fill_sprite;
+end
+
+Plymouth.SetBootProgressFunction(boot_progress_callback);
+
+// ── Message display (kernel errors etc) ──────────────────────────────────────
+message_sprite = Sprite();
+message_sprite.SetX(Math.Int(screen_width * 0.05));
+message_sprite.SetY(Math.Int(screen_height * 0.92));
+message_sprite.SetZ(10);
+
+fun message_callback(text)
+    msg_image = Image.Text(text, 0.7, 0.7, 0.8, 1);
+    message_sprite.SetImage(msg_image);
+end
+
+Plymouth.SetMessageFunction(message_callback);
+
+// ── System shutdown / reboot ──────────────────────────────────────────────────
+fun quit_callback()
+    logo_sprite.SetOpacity(1.0);
+end
+
+Plymouth.SetQuitFunction(quit_callback);
