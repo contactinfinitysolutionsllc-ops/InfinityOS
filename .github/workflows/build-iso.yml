@@ -40,7 +40,8 @@ jobs:
             isolinux \
             syslinux-common \
             wget \
-            ca-certificates
+            ca-certificates \
+            debian-archive-keyring
           # Install live-build from Debian Bookworm — Ubuntu's version is too old.
           # Dynamically resolve the current package URL so this doesn't break
           # when Debian updates the version number.
@@ -67,7 +68,10 @@ jobs:
         run: sudo chmod +x config/hooks/normal/*.hook.chroot
 
       - name: Build ISO
-        run: sudo lb build 2>&1 | tee build.log
+        # pipefail ensures lb's exit code propagates through tee
+        run: |
+          set -o pipefail
+          sudo lb build 2>&1 | tee build.log
         timeout-minutes: 120
 
       - name: Rename ISO with version
