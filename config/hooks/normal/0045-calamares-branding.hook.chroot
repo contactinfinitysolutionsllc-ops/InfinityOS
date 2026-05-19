@@ -1,0 +1,90 @@
+#!/bin/bash
+# 0045-calamares-branding.hook.chroot
+# Wires up InfinityOS branding assets for the Calamares installer.
+# Must run before the KDE/theme hooks so the installer looks right
+# during the live session.
+
+set -euo pipefail
+
+echo ">>> Setting up Calamares branding..."
+
+BRAND_DIR="/etc/calamares/branding/infinityos"
+mkdir -p "${BRAND_DIR}"
+
+# ── Logo ──────────────────────────────────────────────────────────────────────
+# Use the square logo — fits the installer sidebar and slideshow best
+if [ -f /usr/share/infinity/infinity-logo.png ]; then
+    cp /usr/share/infinity/infinity-logo.png "${BRAND_DIR}/logo.png"
+    echo ">>> Calamares: logo.png installed."
+else
+    echo ">>> WARNING: infinity-logo.png not found — Calamares will show no logo."
+fi
+
+# ── Welcome image ─────────────────────────────────────────────────────────────
+# The welcome screen shows a wider image (ideally ~600x200px).
+# We use the wide logo if available, otherwise fall back to the square logo.
+if [ -f /usr/share/infinity/infinity-logo-wide.png ]; then
+    cp /usr/share/infinity/infinity-logo-wide.png "${BRAND_DIR}/welcome.png"
+    echo ">>> Calamares: welcome.png (wide logo) installed."
+elif [ -f /usr/share/infinity/infinity-logo.png ]; then
+    cp /usr/share/infinity/infinity-logo.png "${BRAND_DIR}/welcome.png"
+    echo ">>> Calamares: welcome.png (square logo fallback) installed."
+fi
+
+# ── Calamares desktop entry ───────────────────────────────────────────────────
+# Create a proper desktop entry so Calamares shows in the app menu
+# and can be launched from the dock during the live session.
+cat > /usr/share/applications/calamares.desktop << 'EOF'
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Install InfinityOS
+GenericName=System Installer
+Comment=Install InfinityOS to your hard drive
+Exec=pkexec calamares
+Icon=/etc/calamares/branding/infinityos/logo.png
+Terminal=false
+Categories=System;
+Keywords=install;installer;setup;
+X-GNOME-UsesNotifications=true
+EOF
+
+echo ">>> Calamares desktop entry created."
+
+# ── Polkit rule so Calamares can run via pkexec ───────────────────────────────
+mkdir -p /usr/share/polkit-1/actions
+cat > /usr/share/polkit-1/actions/org.calamares.calamares.policy << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC
+ "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <action id="org.calamares.calamares">
+    <description>Run the Calamares installer</description>
+    <message>Authentication is required to install InfinityOS</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>yes</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/calamares</annotate>
+    <annotate key="org.freedesktop.policykit.exec.allow_gui">true</annotate>
+  </action>
+</policyconfig>
+EOF
+
+echo ">>> Calamares polkit rule installed."
+
+# ── Pin "Install InfinityOS" to the dock during the live session ──────────────
+# This modifies the /etc/skel icontasks config so the installer appears
+# as the first item in the dock when booting into the live session.
+# Installed systems won't have calamares (removed by packages.conf).
+ICONTASKS_CFG="/etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc"
+if [ -f "${ICONTASKS_CFG}" ]; then
+    # Prepend the installer to the existing launchers line
+    sed -i 's|launchers=applications:org.kde.plasma.kickoff.desktop|launchers=applications:calamares.desktop,applications:org.kde.plasma.kickoff.desktop|' \
+        "${ICONTASKS_CFG}" || true
+    echo ">>> Calamares pinned to dock in live session."
+fi
+
+echo ">>> Calamares branding setup complete."
