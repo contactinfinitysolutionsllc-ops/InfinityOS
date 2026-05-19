@@ -44,7 +44,7 @@ LockOnResume=true
 Timeout=10
 
 [Greeter][Wallpaper][org.kde.image][General]
-Image=/usr/share/wallpapers/InfinityOS/contents/images/3840x2160.png
+Image=/usr/share/wallpapers/InfinityOS/contents/images/1672x941.png
 EOF
 
 # ── SDDM theme matching InfinityOS colors ─────────────────────────────────────
@@ -80,21 +80,17 @@ cat > "${WALL_DIR}/metadata.json" << 'EOF'
 EOF
 
 # If branding wallpaper was staged, copy it in
-if [ -f /usr/share/infinity/wallpaper-3840x2160.png ]; then
-    cp /usr/share/infinity/wallpaper-3840x2160.png "${WALL_DIR}/contents/images/3840x2160.png"
-    cp /usr/share/infinity/wallpaper-3840x2160.png "${WALL_DIR}/contents/images/1920x1080.png"
-    echo ">>> Custom wallpaper installed."
+# Wallpaper is copied into includes.chroot by the build system — just verify it landed
+if [ -f "${WALL_DIR}/contents/images/1672x941.png" ]; then
+    echo ">>> Wallpaper present at ${WALL_DIR}/contents/images/1672x941.png"
 else
-    # Generate a placeholder dark wallpaper using ImageMagick if available
+    # Fallback: generate a dark purple gradient placeholder
     if command -v convert &>/dev/null; then
-        convert -size 3840x2160 \
-            gradient:'#0d0e1a-#1a0d2e' \
-            "${WALL_DIR}/contents/images/3840x2160.png"
-        cp "${WALL_DIR}/contents/images/3840x2160.png" \
-           "${WALL_DIR}/contents/images/1920x1080.png"
+        convert -size 1920x1080 gradient:'#0d0e1a-#1a0d2e' \
+            "${WALL_DIR}/contents/images/1672x941.png"
         echo ">>> Placeholder gradient wallpaper generated."
     else
-        echo ">>> WARNING: No wallpaper image found. Add branding/wallpaper-3840x2160.png"
+        echo ">>> WARNING: wallpaper image missing from build."
     fi
 fi
 
