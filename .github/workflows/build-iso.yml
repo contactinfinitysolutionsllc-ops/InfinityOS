@@ -46,19 +46,30 @@ jobs:
       - name: Configure live-build
         run: sudo ./auto/config
 
+      - name: Make hooks executable
+        run: chmod +x config/hooks/normal/*.hook.chroot
+
       - name: Build ISO
         run: sudo lb build 2>&1 | tee build.log
-        timeout-minutes: 90
+        timeout-minutes: 120
 
       - name: Rename ISO with version
         run: |
-          VERSION="${{ github.ref_name }}"
+          # Use tag name for tagged releases, branch+SHA for manual dispatches
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION="${{ github.ref_name }}"
+          else
+            VERSION="${{ github.ref_name }}-$(git rev-parse --short HEAD)"
+          fi
           mv live-image-amd64.hybrid.iso "InfinityOS-${VERSION}-amd64.iso" 2>/dev/null || \
           mv *.iso "InfinityOS-${VERSION}-amd64.iso"
           sha256sum "InfinityOS-${VERSION}-amd64.iso" > "InfinityOS-${VERSION}-amd64.iso.sha256"
           echo "ISO_FILE=InfinityOS-${VERSION}-amd64.iso" >> $GITHUB_ENV
+          echo "ISO_VERSION=${VERSION}" >> $GITHUB_ENV
 
       - name: Publish GitHub Release
+        # Only publish a real release on version tags — not on manual dispatch from a branch
+        if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@v2
         with:
           name: "InfinityOS ${{ github.ref_name }}"
@@ -69,18 +80,19 @@ jobs:
 
             ### What's included
             - Debian Bookworm (Stable) base
-            - KDE Plasma desktop
-            - Wine-Staging + Proton-GE (Windows game compatibility)
+            - KDE Plasma 5 desktop (dark purple theme, floating dock)
+            - Wine-Staging + Proton-GE (Windows game/app compatibility out of the box)
             - Steam + Heroic Games Launcher pre-installed
-            - InfinityMO mod organizer
-            - Local AI assistant (Phi-3.5-mini, downloads on first boot ~2.2 GB)
-            - Firewall on by default, encrypted DNS, MAC randomization
-            - Telemetry blocked at the OS level
+            - Infinity Assistant — local AI (Phi-3.5-mini, downloads on first boot ~2.2 GB)
+            - Firewall on by default, encrypted DNS, MAC address randomization
+            - Telemetry blocked at OS level, Firefox hardened with uBlock Origin
+            - Calamares graphical installer
 
             ### Installation
             1. Flash the ISO to a USB drive (`dd` or Balena Etcher)
-            2. Boot from USB, select **Install InfinityOS**
-            3. AI model downloads automatically on first boot (~2.2 GB, needs internet)
+            2. Boot from USB — live session starts automatically
+            3. Click **Install InfinityOS** in the dock
+            4. AI model downloads automatically on first boot (~2.2 GB, one time)
 
             ### Verify download
             ```
@@ -93,6 +105,16 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload ISO as artifact (manual dispatch builds)
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: InfinityOS-test-build
+          path: |
+            ${{ env.ISO_FILE }}
+            ${{ env.ISO_FILE }}.sha256
+          retention-days: 7
 
       - name: Upload build log on failure
         if: failure()
