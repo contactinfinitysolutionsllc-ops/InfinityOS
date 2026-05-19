@@ -1,0 +1,17 @@
+[Compositing]
+Backend=OpenGL
+GLCore=true
+Enabled=true
+GLPreferBufferSwap=a
+
+[Effect-Blur]
+BlurStrength=6
+NoiseStrength=3
+
+[Plugins]
+blurEnabled=true
+contrastEnabled=true
+kwin4_effect_fadeEnabled=true
+
+[Windows]
+BorderlessMaximizedWindows=false
