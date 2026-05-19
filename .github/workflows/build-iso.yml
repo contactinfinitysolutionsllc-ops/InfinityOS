@@ -29,8 +29,8 @@ jobs:
       - name: Install live-build + tools
         run: |
           sudo apt-get update
+          # Install build tools from Ubuntu repos
           sudo apt-get install -y \
-            live-build \
             debootstrap \
             squashfs-tools \
             xorriso \
@@ -38,7 +38,19 @@ jobs:
             grub-efi-amd64-bin \
             mtools \
             isolinux \
-            syslinux-common
+            syslinux-common \
+            wget \
+            ca-certificates
+          # Install live-build from Debian Bookworm — Ubuntu's version is too old.
+          # Dynamically resolve the current package URL so this doesn't break
+          # when Debian updates the version number.
+          PACKAGES_GZ="https://deb.debian.org/debian/dists/bookworm/main/binary-all/Packages.gz"
+          LB_PATH=$(wget -qO- "$PACKAGES_GZ" | zcat | \
+            awk '/^Package: live-build/{p=1} p && /^Filename:/{print $2; p=0}' | head -1)
+          echo "Installing live-build from: $LB_PATH"
+          wget -qO /tmp/live-build.deb "https://deb.debian.org/debian/$LB_PATH"
+          sudo dpkg -i /tmp/live-build.deb || sudo apt-get install -f -y
+          lb --version
 
       - name: Make auto scripts executable
         run: chmod +x auto/config auto/build auto/clean
