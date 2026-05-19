@@ -47,13 +47,10 @@ btrfs-progs
 usbutils
 pciutils
 mesa-utils
-vulkan-tools
-libvulkan1
-mesa-vulkan-drivers
+# vulkan packages live in 2-gaming to avoid duplication
 
 # Network
 network-manager
-network-manager-gnome
 net-tools
 openssh-client
 

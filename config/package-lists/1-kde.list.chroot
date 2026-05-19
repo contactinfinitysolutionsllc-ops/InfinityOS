@@ -45,10 +45,7 @@ gstreamer1.0-plugins-bad
 gstreamer1.0-plugins-ugly
 gstreamer1.0-libav
 
-# Polish
-breeze
-breeze-gtk-theme
-kde-config-gtk-style
+# Polish (breeze/gtk-style also in 5-theme — intentional, apt dedupes)
 kio-extras
 kio-fuse
 xdg-desktop-portal-kde

@@ -21,9 +21,7 @@ tor
 torsocks
 
 # Encryption + passwords
-gnupg2
-gpg
-seahorse
+gnupg2          # gnupg2 provides the gpg command — no need to list gpg separately
 keepassxc
 
 # Disk encryption support

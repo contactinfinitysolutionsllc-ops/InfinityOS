@@ -15,6 +15,5 @@ breeze-icon-theme
 
 # Used to generate placeholder wallpaper if branding image not present
 imagemagick
-
-# Blur effect dependencies
-libkf5kio-dev
+# libkf5kio-dev removed — that is a dev/headers package, not a runtime dep
+# Runtime kio libs are pulled in automatically by kio-extras (in 1-kde)

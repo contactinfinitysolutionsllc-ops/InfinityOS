@@ -6,7 +6,8 @@ firefox-esr
 
 # Office
 libreoffice
-libreoffice-kde5
+libreoffice-kf5
+libreoffice-plasma
 
 # System tools
 htop
@@ -18,15 +19,8 @@ neofetch
 # Archive support
 unrar
 
-# Media
-vlc
-
-# Utilities
-unzip
-wget
-curl
-
 # Calamares graphical installer
+# (vlc, unzip, wget, curl already in other lists — apt dedupes)
 calamares
 
 # NOTE: InfinityMO and InfinityGuard are not included yet.
