@@ -6,6 +6,7 @@
 # are in development. They will be added to this hook when ready.
 
 set -euo pipefail
+set -x   # ← trace every command so CI shows exactly where we die
 
 echo ">>> Setting up InfinityOS AI service..."
 
@@ -17,13 +18,37 @@ LLAMA_VER="b5574"
 LLAMA_ASSET="llama-${LLAMA_VER}-bin-ubuntu-x64.zip"
 LLAMA_URL="https://github.com/ggml-org/llama.cpp/releases/download/${LLAMA_VER}/${LLAMA_ASSET}"
 
+echo ">>> Downloading llama-server from: ${LLAMA_URL}"
 mkdir -p /opt/infinity-ai/bin
-wget -qO /tmp/llama.zip "${LLAMA_URL}"
+
+# Verbose wget so any failure is visible in CI logs
+wget --no-verbose -O /tmp/llama.zip "${LLAMA_URL}" || {
+    echo "ERROR: wget failed (exit $?) for URL: ${LLAMA_URL}"
+    echo "DNS check:" && cat /etc/resolv.conf
+    exit 1
+}
+
+echo ">>> Download complete, extracting..."
 unzip -q /tmp/llama.zip -d /tmp/llama-extract
-find /tmp/llama-extract -name "llama-server" -type f -exec cp {} /opt/infinity-ai/bin/ \;
+
+echo ">>> Zip contents (llama-server search):"
+find /tmp/llama-extract -name "llama-server" -o -name "server" | head -20
+
+# Copy llama-server binary (try both possible names across versions)
+if find /tmp/llama-extract -name "llama-server" -type f | grep -q .; then
+    find /tmp/llama-extract -name "llama-server" -type f -exec cp {} /opt/infinity-ai/bin/llama-server \;
+elif find /tmp/llama-extract -name "server" -type f | grep -q .; then
+    find /tmp/llama-extract -name "server" -type f -exec cp {} /opt/infinity-ai/bin/llama-server \;
+else
+    echo "ERROR: neither 'llama-server' nor 'server' found in zip"
+    find /tmp/llama-extract -type f | head -30
+    exit 1
+fi
+
 chmod +x /opt/infinity-ai/bin/llama-server
 rm -rf /tmp/llama.zip /tmp/llama-extract
 
+set +x   # stop tracing after the tricky part
 echo ">>> llama-server installed."
 
 # Dedicated system user — no login, no home, runs the AI process only
