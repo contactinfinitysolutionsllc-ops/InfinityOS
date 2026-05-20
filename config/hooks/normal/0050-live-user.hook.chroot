@@ -36,7 +36,7 @@ RebootCommand=/usr/bin/systemctl reboot
 EOF
 
 # Enable SDDM
-systemctl enable sddm
+systemctl enable sddm || true
 
 echo ">>> SDDM autologin configured → KDE Plasma as 'user'."
 

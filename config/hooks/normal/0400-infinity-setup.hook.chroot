@@ -74,7 +74,7 @@ StandardError=journal
 WantedBy=multi-user.target
 EOF
 
-systemctl enable infinity-ai.service
+systemctl enable infinity-ai.service || true
 echo ">>> AI service configured (tuned: Nice+10, CPUQuota=60%, mmap, ctx=4096)."
 
 # ── Infinity Assistant agent ───────────────────────────────────────────────────
@@ -148,7 +148,7 @@ StandardOutput=journal+console
 WantedBy=multi-user.target
 EOF
 
-systemctl enable infinity-first-boot.service
+systemctl enable infinity-first-boot.service || true
 echo ">>> First-boot setup service configured."
 
 # ── KDE default settings for all users ───────────────────────────────────────

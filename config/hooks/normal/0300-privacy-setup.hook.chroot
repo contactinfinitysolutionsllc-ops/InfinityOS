@@ -13,7 +13,7 @@ ufw default deny incoming
 ufw default allow outgoing
 # Allow local network services (Steam, InfinityMO local server, llama.cpp)
 ufw allow from 127.0.0.1
-systemctl enable ufw
+systemctl enable ufw || true
 
 echo ">>> Firewall enabled (deny incoming by default)."
 
@@ -49,7 +49,18 @@ upstream_recursive_servers:
     tls_auth_name: "cloudflare-dns.com"
 EOF
 
-# Point systemd-resolved at stubby (listening on 127.0.0.1:53)
+# Point /etc/resolv.conf directly at stubby (127.0.0.1:53).
+# We don't rely on systemd-resolved — it may not be installed and
+# systemctl in a build chroot can fail unpredictably.
+# Stubby listens on 127.0.0.1:53 and routes all queries over TLS.
+cat > /etc/resolv.conf << 'EOF'
+# InfinityOS — all DNS routed through stubby (DNS-over-TLS)
+nameserver 127.0.0.1
+options edns0 trust-ad
+EOF
+
+# Also pre-configure systemd-resolved in case it gets installed later,
+# but don't require it to be present now.
 mkdir -p /etc/systemd/resolved.conf.d
 cat > /etc/systemd/resolved.conf.d/infinity-dns.conf << 'EOF'
 [Resolve]
@@ -58,8 +69,9 @@ DNSStubListener=no
 DNSSEC=yes
 EOF
 
-systemctl enable stubby
-systemctl enable systemd-resolved
+# Enable stubby — || true because systemd isn't fully running in a chroot
+# (package postinst may have already enabled it anyway)
+systemctl enable stubby || true
 
 echo ">>> Encrypted DNS configured (stubby DoT → Quad9 + Cloudflare)."
 
@@ -121,7 +133,7 @@ EOF
 echo ">>> Telemetry block list applied."
 
 # ── AppArmor enforcement ──────────────────────────────────────────────────────
-systemctl enable apparmor
+systemctl enable apparmor || true
 aa-enforce /etc/apparmor.d/* 2>/dev/null || true
 
 echo ">>> AppArmor enforcement enabled."
