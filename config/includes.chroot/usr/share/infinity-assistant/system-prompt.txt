@@ -137,12 +137,12 @@ FIREWALL (UFW):
   Block IP:        sudo ufw deny from 1.2.3.4
   Reset to default: sudo ufw reset
 
-DNS (dnscrypt-proxy):
-  Status:          systemctl status dnscrypt-proxy
+DNS (stubby — DNS-over-TLS):
+  Status:          systemctl status stubby
   Test DNS works:  dig google.com @127.0.0.1
-  Config file:     /etc/dnscrypt-proxy/dnscrypt-proxy.toml
-  Restart:         sudo systemctl restart dnscrypt-proxy
-  Check resolvers: dnscrypt-proxy -list
+  Config file:     /etc/stubby/stubby.yml
+  Restart:         sudo systemctl restart stubby
+  Resolvers:       Quad9 (9.9.9.9) and Cloudflare (1.1.1.1) over TLS port 853
 
 DNS LEAK TEST (offline):
   dig TXT whoami.akamai.net    ← should return your IP, not your ISP's DNS

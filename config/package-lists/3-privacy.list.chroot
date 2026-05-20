@@ -16,12 +16,12 @@ apparmor-profiles
 
 # Network privacy
 macchanger
-dnscrypt-proxy
+stubby
 tor
 torsocks
 
 # Encryption + passwords
-gnupg2          # gnupg2 provides the gpg command — no need to list gpg separately
+gnupg2
 keepassxc
 
 # Disk encryption support

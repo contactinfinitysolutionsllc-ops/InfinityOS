@@ -17,37 +17,39 @@ systemctl enable ufw
 
 echo ">>> Firewall enabled (deny incoming by default)."
 
-# ── DNS over HTTPS via dnscrypt-proxy ─────────────────────────────────────────
-# Route all DNS through encrypted resolvers — no plaintext DNS leaks.
-cat > /etc/dnscrypt-proxy/dnscrypt-proxy.toml << 'EOF'
-# InfinityOS — encrypted DNS configuration
-listen_addresses = ['127.0.0.1:53', '[::1]:53']
-max_clients = 250
-ipv4_servers = true
-ipv6_servers = false
-dnscrypt_servers = true
-doh_servers = true
-require_dnssec = true
-require_nolog = true       # Only use servers that don't log queries
-require_nofilter = true
-force_tcp = false
-timeout = 5000
-log_level = 0
+# ── DNS-over-TLS via stubby ───────────────────────────────────────────────────
+# stubby is a local DNS-over-TLS resolver — replaces dnscrypt-proxy which was
+# removed from Debian Bookworm. Routes all DNS through encrypted TLS resolvers
+# on port 853, no plaintext DNS leaks.
 
-# Fallback if all resolvers fail (plain DNS — temporary only)
-fallback_resolvers = ['9.9.9.9:53', '1.1.1.1:53']
-ignore_system_dns = true
+cat > /etc/stubby/stubby.yml << 'EOF'
+# InfinityOS — stubby DNS-over-TLS configuration
+resolution_type: GETDNS_RESOLUTION_STUB
+dns_transport_list:
+  - GETDNS_TRANSPORT_TLS
+tls_authentication: GETDNS_AUTHENTICATION_REQUIRED
+tls_query_padding_blocksize: 128
+edns_client_subnet_private: 1
+idle_timeout: 10000
+listen_addresses:
+  - 127.0.0.1@53
+  - 0::1@53
 
-[sources]
-  [sources.public-resolvers]
-  urls = ['https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/public-resolvers.md']
-  cache_file = '/var/cache/dnscrypt-proxy/public-resolvers.md'
-  minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
-  refresh_delay = 72
-  prefix = ''
+# Privacy-respecting no-log resolvers with DNSSEC
+upstream_recursive_servers:
+  # Quad9 — no logging, malware blocking, DNSSEC
+  - address_data: 9.9.9.9
+    tls_auth_name: "dns.quad9.net"
+  - address_data: 149.112.112.112
+    tls_auth_name: "dns.quad9.net"
+  # Cloudflare 1.1.1.1 — no logging policy
+  - address_data: 1.1.1.1
+    tls_auth_name: "cloudflare-dns.com"
+  - address_data: 1.0.0.1
+    tls_auth_name: "cloudflare-dns.com"
 EOF
 
-# Point systemd-resolved at dnscrypt-proxy
+# Point systemd-resolved at stubby (listening on 127.0.0.1:53)
 mkdir -p /etc/systemd/resolved.conf.d
 cat > /etc/systemd/resolved.conf.d/infinity-dns.conf << 'EOF'
 [Resolve]
@@ -56,10 +58,10 @@ DNSStubListener=no
 DNSSEC=yes
 EOF
 
-systemctl enable dnscrypt-proxy
+systemctl enable stubby
 systemctl enable systemd-resolved
 
-echo ">>> Encrypted DNS configured."
+echo ">>> Encrypted DNS configured (stubby DoT → Quad9 + Cloudflare)."
 
 # ── MAC address randomization ─────────────────────────────────────────────────
 # Randomize MAC on every connection — prevents tracking across networks.
