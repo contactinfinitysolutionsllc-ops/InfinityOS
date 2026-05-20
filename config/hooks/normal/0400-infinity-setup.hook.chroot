@@ -185,4 +185,15 @@ BorderlessMaximizedWindows=false
 EOF
 
 echo ">>> KDE defaults configured."
+
+# ── Point resolv.conf at stubby ───────────────────────────────────────────────
+# All build-time downloads are done. Now route DNS through stubby (DoT).
+# This must be the LAST thing that touches the network config in any hook.
+cat > /etc/resolv.conf << 'EOF'
+# InfinityOS — all DNS routed through stubby (DNS-over-TLS)
+nameserver 127.0.0.1
+options edns0 trust-ad
+EOF
+echo ">>> resolv.conf configured to use stubby for encrypted DNS."
+
 echo ">>> InfinityOS setup complete."
