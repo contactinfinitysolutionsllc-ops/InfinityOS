@@ -38,7 +38,7 @@ ca-certificates
 # Filesystem support
 ntfs-3g
 exfatprogs
-fuse
+fuse3
 libfuse2
 dosfstools
 btrfs-progs
