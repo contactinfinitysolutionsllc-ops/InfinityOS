@@ -26,6 +26,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Free disk space
+        # GitHub-hosted Ubuntu runners ship with ~14 GB free but a full KDE+Wine
+        # ISO needs more. Remove pre-installed SDKs/toolchains that we don't need.
+        # This recovers ~20 GB, bringing available space to ~33 GB.
+        run: |
+          echo "=== Disk before cleanup ==="
+          df -h /
+          sudo rm -rf /usr/local/lib/android          # ~8 GB  Android SDK
+          sudo rm -rf /usr/share/dotnet               # ~2 GB  .NET SDK
+          sudo rm -rf /usr/local/share/powershell     # ~600 MB
+          sudo rm -rf /usr/local/share/chromium       # ~400 MB
+          sudo rm -rf /usr/local/lib/node_modules     # ~600 MB
+          sudo rm -rf /opt/ghc                        # ~5 GB  Haskell GHC
+          sudo rm -rf /opt/hostedtoolcache            # ~8 GB  language tool caches
+          sudo docker image prune --all --force 2>/dev/null || true
+          sudo apt-get clean
+          echo "=== Disk after cleanup ==="
+          df -h /
+
       - name: Install live-build + tools
         run: |
           sudo apt-get update
