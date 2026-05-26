@@ -1,18 +1,75 @@
 #!/bin/bash
 # 0045-calamares-branding.hook.chroot
 # Wires up InfinityOS branding assets for the Calamares installer.
-# Must run before the KDE/theme hooks so the installer looks right
-# during the live session.
+# Also installs icons into the hicolor theme so KDE renders them with
+# correct transparency (icons referenced by name, not full path).
 
 set -euo pipefail
 
-echo ">>> Setting up Calamares branding..."
+echo ">>> Setting up Calamares branding and icons..."
 
 BRAND_DIR="/etc/calamares/branding/infinityos"
 mkdir -p "${BRAND_DIR}"
 
+# ── Strip white backgrounds from logo PNGs ────────────────────────────────────
+# The source PNGs may have a white/near-white background. We strip it using
+# Python's built-in struct+zlib (no extra deps needed) via ImageMagick if
+# available, otherwise mark for manual fix.
+if command -v convert >/dev/null 2>&1; then
+    for PNG in /usr/share/infinity/*.png; do
+        convert "${PNG}" -fuzz 5% -transparent white "${PNG}" 2>/dev/null || true
+    done
+    echo ">>> Icon white backgrounds stripped (ImageMagick)."
+else
+    # Install imagemagick just for this step then we have it on the system too
+    apt-get install -y --no-install-recommends imagemagick 2>/dev/null || true
+    if command -v convert >/dev/null 2>&1; then
+        for PNG in /usr/share/infinity/*.png; do
+            convert "${PNG}" -fuzz 5% -transparent white "${PNG}" 2>/dev/null || true
+        done
+        echo ">>> Icon white backgrounds stripped (ImageMagick freshly installed)."
+    else
+        echo ">>> WARNING: ImageMagick not available — icon backgrounds not stripped."
+    fi
+fi
+
+# ── Install icons into hicolor theme for proper KDE transparency ──────────────
+# When icons are referenced by *name* (not full path), KDE looks them up via
+# the icon theme and renders transparency correctly. Full paths can show white.
+mkdir -p /usr/share/icons/hicolor/256x256/apps
+mkdir -p /usr/share/icons/hicolor/128x128/apps
+mkdir -p /usr/share/icons/hicolor/64x64/apps
+
+# OS logo → infinity-os icon name
+if [ -f /usr/share/infinity/infinity-logo.png ]; then
+    cp /usr/share/infinity/infinity-logo.png \
+       /usr/share/icons/hicolor/256x256/apps/infinity-os.png
+fi
+
+# AI assistant icon — use the alt logo variant for visual distinction
+# (different from the main OS logo so they don't look identical in the dock)
+if [ -f /usr/share/infinity/infinity-alt.png ]; then
+    cp /usr/share/infinity/infinity-alt.png \
+       /usr/share/icons/hicolor/256x256/apps/infinity-ai.png
+    # Also put it at the expected full path for .desktop fallback
+    cp /usr/share/infinity/infinity-alt.png \
+       /usr/share/infinity/infinity-ai-icon.png
+elif [ -f /usr/share/infinity/infinity-logo.png ]; then
+    cp /usr/share/infinity/infinity-logo.png \
+       /usr/share/icons/hicolor/256x256/apps/infinity-ai.png
+    cp /usr/share/infinity/infinity-logo.png \
+       /usr/share/infinity/infinity-ai-icon.png
+fi
+
+# Update icon theme cache
+gtk-update-icon-cache -f /usr/share/icons/hicolor/ 2>/dev/null || true
+echo ">>> Icons installed to hicolor theme (infinity-os, infinity-ai)."
+
+# ── Update desktop entry to use icon name (not path) ─────────────────────────
+sed -i 's|Icon=/usr/share/infinity/infinity-ai-icon.png|Icon=infinity-ai|' \
+    /usr/share/applications/infinity-assistant.desktop 2>/dev/null || true
+
 # ── Logo ──────────────────────────────────────────────────────────────────────
-# Use the square logo — fits the installer sidebar and slideshow best
 if [ -f /usr/share/infinity/infinity-logo.png ]; then
     cp /usr/share/infinity/infinity-logo.png "${BRAND_DIR}/logo.png"
     echo ">>> Calamares: logo.png installed."
@@ -21,10 +78,8 @@ else
 fi
 
 # ── Welcome image ─────────────────────────────────────────────────────────────
-# The welcome screen shows a wider image (ideally ~600x200px).
-# We use the wide logo if available, otherwise fall back to the square logo.
-if [ -f /usr/share/infinity/infinity-logo-wide.png ]; then
-    cp /usr/share/infinity/infinity-logo-wide.png "${BRAND_DIR}/welcome.png"
+if [ -f /usr/share/infinity/infinity-wide.png ]; then
+    cp /usr/share/infinity/infinity-wide.png "${BRAND_DIR}/welcome.png"
     echo ">>> Calamares: welcome.png (wide logo) installed."
 elif [ -f /usr/share/infinity/infinity-logo.png ]; then
     cp /usr/share/infinity/infinity-logo.png "${BRAND_DIR}/welcome.png"
@@ -32,8 +87,6 @@ elif [ -f /usr/share/infinity/infinity-logo.png ]; then
 fi
 
 # ── Calamares desktop entry ───────────────────────────────────────────────────
-# Create a proper desktop entry so Calamares shows in the app menu
-# and can be launched from the dock during the live session.
 cat > /usr/share/applications/calamares.desktop << 'EOF'
 [Desktop Entry]
 Version=1.0
@@ -42,7 +95,7 @@ Name=Install InfinityOS
 GenericName=System Installer
 Comment=Install InfinityOS to your hard drive
 Exec=pkexec calamares
-Icon=/etc/calamares/branding/infinityos/logo.png
+Icon=infinity-os
 Terminal=false
 Categories=System;
 Keywords=install;installer;setup;
@@ -76,15 +129,20 @@ EOF
 echo ">>> Calamares polkit rule installed."
 
 # ── Pin "Install InfinityOS" to the dock during the live session ──────────────
-# This modifies the /etc/skel icontasks config so the installer appears
-# as the first item in the dock when booting into the live session.
-# Installed systems won't have calamares (removed by packages.conf).
+# Prepend calamares to the launchers list in the skel dock config.
 ICONTASKS_CFG="/etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc"
 if [ -f "${ICONTASKS_CFG}" ]; then
-    # Prepend the installer to the existing launchers line
-    sed -i 's|launchers=applications:org.kde.plasma.kickoff.desktop|launchers=applications:calamares.desktop,applications:org.kde.plasma.kickoff.desktop|' \
+    # Add calamares as the first dock item (before infinity-assistant)
+    sed -i 's|launchers=applications:infinity-assistant.desktop|launchers=applications:calamares.desktop,applications:infinity-assistant.desktop|' \
         "${ICONTASKS_CFG}" || true
-    echo ">>> Calamares pinned to dock in live session."
+    echo ">>> Calamares pinned to dock (live session)."
+fi
+
+# Also update the live user's copy if it already exists
+LIVE_ICONTASKS="/home/user/.config/plasma-org.kde.plasma.desktop-appletsrc"
+if [ -f "${LIVE_ICONTASKS}" ]; then
+    sed -i 's|launchers=applications:infinity-assistant.desktop|launchers=applications:calamares.desktop,applications:infinity-assistant.desktop|' \
+        "${LIVE_ICONTASKS}" || true
 fi
 
 echo ">>> Calamares branding setup complete."

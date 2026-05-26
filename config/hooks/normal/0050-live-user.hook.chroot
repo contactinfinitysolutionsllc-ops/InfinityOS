@@ -72,7 +72,29 @@ GLCore=true
 Enabled=true
 EOF
 
+# ── Centered floating dock ────────────────────────────────────────────────────
+cat > "${LIVE_CONFIG}/plasmashellrc" << 'EOF'
+[PlasmaViews][Panel 2][Defaults]
+thickness=32
+
+[PlasmaViews][Panel 3][Defaults]
+thickness=56
+maxLength=800
+minLength=600
+alignment=1
+
+[PlasmaViews][Panel 3][Floating]
+floating=1
+EOF
+
+# ── Keyboard shortcuts ────────────────────────────────────────────────────────
+cp /etc/skel/.config/kglobalshortcutsrc "${LIVE_CONFIG}/kglobalshortcutsrc"
+
+# ── Dock launcher list (centered, no blank kickoff entry) ────────────────────
+cp /etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc \
+   "${LIVE_CONFIG}/plasma-org.kde.plasma.desktop-appletsrc"
+
 # Fix ownership — live user must own their own config
 chown -R user:user /home/user
 
-echo ">>> Live user KDE defaults applied."
+echo ">>> Live user KDE defaults applied (centered dock, shortcuts, fixed launchers)."

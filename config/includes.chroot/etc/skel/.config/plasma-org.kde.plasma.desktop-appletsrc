@@ -39,7 +39,7 @@ PreloadWeight=100
 
 [Containments][2][Applets][3][Configuration][General]
 applicationButtonAction=dashboard
-customButtonImage=/usr/share/infinity/infinity-logo.png
+customButtonImage=infinity-os
 useCustomButtonImage=true
 
 [Containments][2][Applets][4]
@@ -86,7 +86,7 @@ immutability=1
 plugin=org.kde.plasma.icontasks
 
 [Containments][3][Applets][10][Configuration][General]
-launchers=applications:org.kde.plasma.kickoff.desktop,applications:infinity-assistant.desktop,applications:org.kde.konsole.desktop,applications:org.kde.dolphin.desktop,applications:firefox-esr.desktop,applications:org.kde.discover.desktop,applications:systemsettings.desktop,applications:org.kde.plasma.trash.desktop
+launchers=applications:infinity-assistant.desktop,applications:org.kde.konsole.desktop,applications:org.kde.dolphin.desktop,applications:firefox-esr.desktop,applications:org.kde.discover.desktop,applications:systemsettings.desktop,applications:org.kde.plasma.trash.desktop
 showOnlyCurrentDesktop=false
 showOnlyCurrentActivity=false
 showOnlyMinimized=false

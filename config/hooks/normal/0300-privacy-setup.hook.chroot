@@ -49,17 +49,12 @@ upstream_recursive_servers:
     tls_auth_name: "cloudflare-dns.com"
 EOF
 
-# Point /etc/resolv.conf directly at stubby (127.0.0.1:53).
-# We don't rely on systemd-resolved — it may not be installed and
-# systemctl in a build chroot can fail unpredictably.
-# Stubby listens on 127.0.0.1:53 and routes all queries over TLS.
-cat > /etc/resolv.conf << 'EOF'
-# InfinityOS — all DNS routed through stubby (DNS-over-TLS)
-nameserver 127.0.0.1
-options edns0 trust-ad
-EOF
+# NOTE: /etc/resolv.conf is NOT overwritten here because subsequent hooks
+# (0400) still need working DNS to download files during the build.
+# The resolv.conf is pointed at stubby at the end of hook 0400, after
+# all build-time downloads are complete.
 
-# Also pre-configure systemd-resolved in case it gets installed later,
+# Pre-configure systemd-resolved in case it gets installed later,
 # but don't require it to be present now.
 mkdir -p /etc/systemd/resolved.conf.d
 cat > /etc/systemd/resolved.conf.d/infinity-dns.conf << 'EOF'

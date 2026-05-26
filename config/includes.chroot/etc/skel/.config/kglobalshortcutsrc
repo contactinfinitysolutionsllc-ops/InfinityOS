@@ -1,0 +1,64 @@
+# InfinityOS — KDE global keyboard shortcuts
+# Format: Action=Current,Default,Friendly Name
+
+[kwin]
+# Window management
+Window Close=Alt+F4,Alt+F4,Close Window
+Window Maximize=Meta+Up,Meta+Up,Maximize Window
+Window Minimize=Meta+Down,Meta+Down,Minimize Window
+Window Fullscreen=none,none,Make Window Fullscreen
+Window to Next Screen=Meta+Shift+Right,Meta+Shift+Right,Move Window to Next Screen
+Window to Previous Screen=Meta+Shift+Left,Meta+Shift+Left,Move Window to Previous Screen
+Window Center=none,none,Center Window in Screen
+# Virtual desktops
+Switch One Desktop to the Left=Ctrl+Alt+Left,Ctrl+Alt+Left,Switch One Desktop to the Left
+Switch One Desktop to the Right=Ctrl+Alt+Right,Ctrl+Alt+Right,Switch One Desktop to the Right
+# Window switching
+Walk Through Windows=Alt+Tab,Alt+Tab,Walk Through Windows
+Walk Through Windows (Reverse)=Alt+Shift+Tab,Alt+Shift+Tab,Walk Through Windows (Reverse)
+Walk Through Windows of Current Application=Alt+`,Alt+`,Walk Through Windows of Current Application
+# Show desktop
+Show Desktop=Meta+D,Meta+D,Show Desktop
+# Tiling
+Toggle Window Raise/Lower=none,none,Toggle Window Raise/Lower
+
+[plasmashell]
+# App launcher
+_launch=Meta,Meta,Activate Application Dashboard
+activate task manager entry 1=Meta+1,Meta+1,Activate Task Manager Entry 1
+activate task manager entry 2=Meta+2,Meta+2,Activate Task Manager Entry 2
+activate task manager entry 3=Meta+3,Meta+3,Activate Task Manager Entry 3
+activate task manager entry 4=Meta+4,Meta+4,Activate Task Manager Entry 4
+activate task manager entry 5=Meta+5,Meta+5,Activate Task Manager Entry 5
+activate task manager entry 6=Meta+6,Meta+6,Activate Task Manager Entry 6
+activate task manager entry 7=Meta+7,Meta+7,Activate Task Manager Entry 7
+activate task manager entry 8=Meta+8,Meta+8,Activate Task Manager Entry 8
+activate task manager entry 9=Meta+9,Meta+9,Activate Task Manager Entry 9
+# Panel
+manage activities=Meta+Q,Meta+Q,Show Activity Switcher
+
+[org.kde.spectacle.desktop]
+# Screenshots
+_launch=Print,Print,Launch Spectacle
+ActiveWindowScreenShot=Meta+Print,Meta+Print,Capture Active Window
+RectangularRegionScreenShot=Shift+Print,Shift+Print,Capture Rectangular Region
+FullScreenScreenShot=Ctrl+Print,Ctrl+Print,Capture Entire Desktop
+
+[org.kde.konsole.desktop]
+# Terminal
+_launch=Ctrl+Alt+T,Ctrl+Alt+T,Launch Konsole
+
+[org_kde_powerdevil]
+Sleep=Sleep,Sleep,Suspend
+Hibernate=none,none,Hibernate
+PowerOff=none,none,Power Off
+
+[ksmserver]
+Lock Session=Meta+L,Meta+L,Lock Session
+Log Out=Ctrl+Alt+Delete,Ctrl+Alt+Delete,Log Out
+
+[org.kde.dolphin.desktop]
+_launch=Meta+E,Meta+E,Open File Manager
+
+[org.kde.krunner.desktop]
+_launch=Alt+F2\tMeta+Space,Alt+F2\tMeta+Space,Launch KRunner
