@@ -15,7 +15,7 @@ plugin=org.kde.plasma.folder
 wallpaperplugin=org.kde.image
 
 [Containments][1][Wallpaper][org.kde.image][General]
-Image=/usr/share/wallpapers/InfinityOS/contents/images/1672x941.png
+Image=InfinityOS
 FillMode=1
 SlideshowInterval=0
 

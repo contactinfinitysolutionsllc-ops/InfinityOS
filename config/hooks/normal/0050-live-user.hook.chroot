@@ -90,7 +90,10 @@ EOF
 # ── Keyboard shortcuts ────────────────────────────────────────────────────────
 cp /etc/skel/.config/kglobalshortcutsrc "${LIVE_CONFIG}/kglobalshortcutsrc"
 
-# ── Dock launcher list (centered, no blank kickoff entry) ────────────────────
+# ── Dock + wallpaper config ───────────────────────────────────────────────────
+# Copy the full plasma desktop config (dock layout, wallpaper, widgets).
+# The wallpaper is referenced by package name "InfinityOS" so KDE picks
+# the right resolution image automatically.
 cp /etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc \
    "${LIVE_CONFIG}/plasma-org.kde.plasma.desktop-appletsrc"
 
