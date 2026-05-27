@@ -1,9 +1,13 @@
-# Loose asset files in root — originals stay here for reference, built copies go in branding/
+# Loose asset files in root — originals stay here for reference, built copies go in includes.chroot
 InfinityOS Logo.png
 infinityOS.png
 infinityOS-ALT.png
 infinityos-desktop background-logo.png
 infinityos-desktop background-nologo.png
+InfinityAI icon.png
+InfinityAI icon2.png
+InfinityOS Default Background.png
+InfinityOS Default Background + Logo.png
 
 # live-build output — never commit ISOs or build artifacts
 *.iso

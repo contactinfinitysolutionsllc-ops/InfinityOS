@@ -1,0 +1,14 @@
+{
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "InfinityOS"
+            }
+        ],
+        "Id": "InfinityOSLogo",
+        "License": "CC-BY-SA-4.0",
+        "Name": "InfinityOS (with Logo)",
+        "Version": "1.0"
+    },
+    "X-KDE-PluginInfo-Name": "InfinityOSLogo"
+}

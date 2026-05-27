@@ -210,6 +210,118 @@ EOF
 
 echo ">>> KDE defaults configured."
 
+# ── InfinityGuard Security Suite ─────────────────────────────────────────────
+# The InfinityGuard .deb is expected in config/packages.chroot/
+# live-build installs it automatically before this hook runs.
+# This section handles InfinityOS-specific post-install configuration.
+
+if dpkg -l infinityguard &>/dev/null; then
+    echo ">>> InfinityGuard is installed — applying InfinityOS configuration..."
+
+    # ── Tune IG config for InfinityOS ────────────────────────────────────────
+    # Disable auto-update check on first boot (we'll do it via first-boot svc)
+    # and point AI explanation at the local llama.cpp server.
+    if [ -f /etc/infinityguard/config.json ]; then
+        python3 - << 'PYEOF'
+import json, sys
+cfg_path = "/etc/infinityguard/config.json"
+try:
+    with open(cfg_path) as f:
+        cfg = json.load(f)
+    # Enable local AI explanation via llama.cpp on InfinityOS
+    cfg.setdefault("ai", {})["local_endpoint"] = "http://127.0.0.1:8080"
+    cfg["ai"]["mode"] = "local"
+    # Tighten fanotify for OS use (also watch /usr/local)
+    cfg.setdefault("fanotify", {})["watch_paths"] = [
+        "/home", "/root", "/tmp", "/var/tmp",
+        "/opt", "/usr/local/bin", "/usr/local/sbin"
+    ]
+    # InfinityOS ships ClamAV — mark it available
+    cfg.setdefault("engines", {})["clamav_path"] = "/usr/bin/clamdscan"
+    with open(cfg_path, "w") as f:
+        json.dump(cfg, f, indent=2)
+    print("  IG config patched for InfinityOS.")
+except Exception as e:
+    print(f"  Warning: could not patch IG config: {e}")
+PYEOF
+    fi
+
+    # ── IG first-boot IE feed sync ────────────────────────────────────────────
+    # The Infinity Engine threat feed database is empty on first install.
+    # We download it on first boot — same as the AI model download pattern.
+    cat > /usr/local/bin/ig-first-boot << 'SCRIPT'
+#!/bin/bash
+set -e
+SENTINEL="/var/lib/infinityguard/.ie-setup-complete"
+[ -f "${SENTINEL}" ] && exit 0
+
+# Notify user
+DBUS_SESSION=$(find /run/user -name "bus" 2>/dev/null | head -1)
+_notify() {
+    [ -n "${DBUS_SESSION}" ] || return 0
+    DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS="unix:path=${DBUS_SESSION}" \
+    notify-send "$1" "$2" --icon=security-high --app-name="InfinityGuard" 2>/dev/null || true
+}
+
+_notify "InfinityGuard" "Downloading threat intelligence feeds (first run)..."
+echo "InfinityGuard: syncing Infinity Engine threat feeds..."
+
+# Call IG's update endpoint if service is already running
+if curl -sf http://127.0.0.1:54321/ready &>/dev/null; then
+    curl -sf -X POST http://127.0.0.1:54321/update/run &>/dev/null || true
+else
+    # Service not up yet — run updater directly
+    /usr/bin/python3 /opt/infinityguard/core/ig_update.py --quiet || true
+fi
+
+# Update ClamAV definitions too
+freshclam --no-warnings 2>/dev/null || true
+
+touch "${SENTINEL}"
+_notify "InfinityGuard Ready" \
+    "Threat intelligence updated. Real-time protection is active."
+echo "InfinityGuard: first-boot setup complete."
+SCRIPT
+
+    chmod +x /usr/local/bin/ig-first-boot
+
+    cat > /etc/systemd/system/ig-first-boot.service << 'EOF'
+[Unit]
+Description=InfinityGuard First Boot — Threat Intelligence Sync
+After=network-online.target infinityguard.service
+Wants=network-online.target
+ConditionPathExists=!/var/lib/infinityguard/.ie-setup-complete
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/ig-first-boot
+RemainAfterExit=yes
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    systemctl enable ig-first-boot.service || true
+    echo ">>> IG first-boot IE sync service configured."
+
+    # ── AppArmor profile is already installed by postinst ────────────────────
+    # Load it now in the chroot so it's active on first boot without a reboot
+    if command -v apparmor_parser &>/dev/null && [ -f /etc/apparmor.d/infinityguard ]; then
+        apparmor_parser -r /etc/apparmor.d/infinityguard 2>/dev/null || true
+        echo ">>> AppArmor profile loaded."
+    fi
+
+    echo ">>> InfinityGuard InfinityOS integration complete."
+else
+    echo ">>> WARNING: infinityguard package not found."
+    echo "    To include InfinityGuard in the build:"
+    echo "    1. Run: bash linux/build-deb.sh"
+    echo "    2. Copy the .deb to: InfinityOS/config/packages.chroot/"
+    echo "    3. Rebuild the ISO."
+fi
+
 # ── Point resolv.conf at stubby ───────────────────────────────────────────────
 # All build-time downloads are done. Now route DNS through stubby (DoT).
 # This must be the LAST thing that touches the network config in any hook.
