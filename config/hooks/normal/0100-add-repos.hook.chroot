@@ -19,7 +19,7 @@ wget -qO /etc/apt/keyrings/winehq-archive.key \
 cat > /etc/apt/sources.list.d/winehq.sources << 'EOF'
 Types: deb
 URIs: https://dl.winehq.org/wine-builds/debian/
-Suites: bookworm
+Suites: trixie
 Components: main
 Signed-By: /etc/apt/keyrings/winehq-archive.key
 EOF

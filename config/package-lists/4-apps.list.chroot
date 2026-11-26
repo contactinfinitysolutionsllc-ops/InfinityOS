@@ -6,15 +6,21 @@ firefox-esr
 
 # Office
 libreoffice
-libreoffice-kf5
+libreoffice-kf6
 libreoffice-plasma
+
+# Native-app ecosystem (Flathub) — unlocks Bottles / ProtonUp-Qt / Discord / OBS without
+# bloating the base, and powers the native-first compat strategy
+flatpak
+plasma-discover-backend-flatpak
 
 # System tools
 htop
 btop
 gparted
 timeshift
-neofetch
+# fastfetch replaces neofetch (neofetch was removed from Debian in the trixie cycle)
+fastfetch
 
 # Archive support
 unrar

@@ -39,7 +39,7 @@ vlc
 ffmpeg
 ffmpegthumbs
 kdegraphics-thumbnailers
-phonon4qt5-backend-gstreamer
+phonon4qt6-backend-gstreamer
 gstreamer1.0-plugins-good
 gstreamer1.0-plugins-bad
 gstreamer1.0-plugins-ugly

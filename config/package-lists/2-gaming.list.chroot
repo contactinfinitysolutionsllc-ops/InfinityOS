@@ -26,11 +26,27 @@ lutris
 gamemode
 mangohud
 
-# Vulkan + DXVK support
+# gamescope — per-game micro-compositor: native-res render + FSR upscale, frame cap,
+# HDR/VRR, proper fullscreen. The "best choice per actual screen resolution" engine.
+# (Packaged in trixie; not available on bookworm.)
+gamescope
+
+# Vulkan + DXVK support — 64-bit AND 32-bit (32-bit is required or DXVK silently fails
+# on 32-bit games)
 mesa-vulkan-drivers
+mesa-vulkan-drivers:i386
+libgl1-mesa-dri:i386
+libglx-mesa0:i386
 vulkan-tools
 libvulkan1
 libvulkan1:i386
+
+# umu-launcher — run non-Steam games with Proton + the Steam Linux Runtime + protonfixes
+# (per-game auto-config). The substrate for the recipe/CDE layer.
+umu-launcher
+
+# Controller support beyond Steam Input (udev rules so any pad works system-wide)
+steam-devices
 
 # Proton-GE is downloaded by the 0200 hook at build time
 

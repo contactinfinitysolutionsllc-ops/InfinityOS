@@ -1,8 +1,8 @@
 # ── Theme + visual polish ─────────────────────────────────────────────────────
 
-# Qt blur/transparency (makes panels look like the mockup)
-qt5-style-kvantum
-qt5-style-kvantum-themes
+# Qt blur/transparency (makes panels look like the mockup) — Qt6 for Plasma 6
+qt6-style-kvantum
+qt6-style-kvantum-themes
 
 # KDE look-and-feel extras
 breeze
